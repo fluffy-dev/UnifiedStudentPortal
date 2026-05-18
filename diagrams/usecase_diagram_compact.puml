@@ -1,0 +1,218 @@
+@startuml UniversityManagementSystem
+left to right direction
+hide footbox
+
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor #555555
+
+' --- Actors ---
+skinparam actorStyle awesome
+skinparam actor {
+    BackgroundColor White
+    BorderColor #555555
+}
+skinparam actor<<abstract>> {
+    BackgroundColor #F4F6F7
+    BorderColor #888888
+    FontStyle italic
+}
+skinparam actor<<capability>> {
+    BackgroundColor #E8F8F5
+    BorderColor #1ABC9C
+    FontStyle italic
+}
+
+' --- Use-case nodes (action nodes) ---
+skinparam usecase {
+    BackgroundColor #EBF5FB
+    BorderColor #2E86C1
+    BorderThickness 1.5
+}
+
+' --- Entity rectangles ---
+skinparam rectangle {
+    BackgroundColor White
+    BorderColor #2C3E50
+    BorderThickness 2
+    RoundCorner 6
+}
+
+' --- Domain packages ---
+skinparam package {
+    BackgroundColor #FDFEFE
+    BorderColor #AAB7B8
+    BorderThickness 1
+    FontStyle bold
+    FontSize 13
+}
+
+' ================================================================
+'  ACTORS
+' ================================================================
+actor "User"         as User     <<abstract>>
+actor "Employee"     as Employee <<abstract>>
+
+actor "Student / Grad" as Student
+actor "Teacher"        as Teacher
+actor "Manager"        as Manager
+actor "Dean"           as Dean
+actor "Librarian"      as Librarian
+actor "TechSupport"    as Tech
+actor "EmpResearcher"  as EmpRes
+actor "Admin"          as Admin
+
+actor "Researcher"     as Researcher <<capability>>
+
+' --- Inheritance (generalisation) ---
+User     <|-- Student
+User     <|-- Employee
+User     <|-- Admin
+Employee <|-- Teacher
+Employee <|-- Manager
+Employee <|-- Librarian
+Employee <|-- Tech
+Employee <|-- EmpRes
+Teacher  <|-- Dean
+
+' --- Researcher is an opt-in capability, not a role ---
+Student  ..> Researcher : <<become>>
+Teacher  ..> Researcher : <<become>>
+EmpRes   --> Researcher : <<always>>
+
+' ================================================================
+'  DOMAIN ENTITIES
+' ================================================================
+package "📚 Academics" {
+    rectangle Course
+    rectangle Lesson
+    rectangle Grade
+    rectangle Transcript
+    rectangle Request
+}
+
+package "📖 Library" {
+    rectangle Book
+}
+
+package "💬 Communication" {
+    rectangle News
+    rectangle Comment
+    rectangle Message
+}
+
+package "⚙️ Operations" {
+    rectangle "IT Order"       as Order
+    rectangle Organization     as Org
+    rectangle "User Account"   as Account
+    rectangle "System Log"     as Log
+}
+
+package "🔬 Research" {
+    rectangle Paper
+    rectangle Project
+}
+
+' --- Structural relations between entities (dashed) ---
+Lesson    ..> Course     : belongs to
+Grade     ..> Course     : recorded on
+Transcript ..> Grade     : aggregates
+Comment   ..> News       : on
+Request   ..> Course     : may target
+Paper     ..> Project    : published in
+
+' ================================================================
+'  USE-CASE ACTION NODES
+'  (only where ≥ 2 concrete roles share ≥ 2 verbs on one entity)
+' ================================================================
+(Borrow / Return)           as UC_Borrow
+(Teach / View Taught)       as UC_Teach
+(Approve / Reject Request)  as UC_Process
+
+' ================================================================
+'  USER  (abstract) — universal actions inherited by every role
+'  Shown as direct arrows; no intermediary node needed
+' ================================================================
+User --> Course     : view
+User --> Book       : view
+User --> News       : view
+User --> Message    : send / read
+User --> Comment    : write
+User --> Request    : view own / submit
+User --> Paper      : view
+User --> Project    : view
+User --> Transcript : view own
+
+' ================================================================
+'  EMPLOYEE  (abstract) — employee-wide actions
+' ================================================================
+Employee --> News  : publish / pin
+Employee --> Order : submit
+
+' ================================================================
+'  STUDENT
+' ================================================================
+Student --> Course     : enroll / drop
+Student --> UC_Borrow
+Student --> Org        : create / join
+Student --> Teacher    : rate
+
+' ================================================================
+'  TEACHER
+' ================================================================
+Teacher --> UC_Borrow
+Teacher --> UC_Teach
+Teacher --> Grade   : record marks
+Teacher --> Grade   : view student grades
+Teacher --> Student : file complaint
+
+' ================================================================
+'  MANAGER
+' ================================================================
+Manager --> Course   : create / configure / delete
+Manager --> Lesson   : add
+Manager --> Teacher  : assign to course
+Manager --> UC_Process
+Manager --> Transcript : generate report
+
+' ================================================================
+'  DEAN
+' ================================================================
+Dean --> UC_Teach
+Dean --> Grade   : view student grades
+Dean --> UC_Process
+
+' ================================================================
+'  LIBRARIAN
+' ================================================================
+Librarian --> Book : add / remove
+
+' ================================================================
+'  TECHSUPPORT
+' ================================================================
+Tech --> Order : view queue
+Tech --> Order : accept / complete
+
+' ================================================================
+'  ADMIN
+' ================================================================
+Admin --> Account : create / delete
+Admin --> Log     : view / audit
+Admin --> News    : generate top-researcher
+
+' ================================================================
+'  RESEARCHER  (capability)
+' ================================================================
+Researcher --> Paper   : publish / cite
+Researcher --> Project : create / join
+Researcher --> Project : subscribe / unsubscribe
+
+' ================================================================
+'  ACTION NODE  →  ENTITY
+' ================================================================
+UC_Borrow  --> Book
+UC_Teach   --> Course
+UC_Process --> Request
+
+@enduml
