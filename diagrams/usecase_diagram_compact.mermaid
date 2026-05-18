@@ -1,0 +1,166 @@
+# Compact Use-Case Diagram — entity-centric
+
+> **Reading rule.** Roles sit on the perimeter, entities in the middle.
+> Each arrow is one or more verbs from a role onto an entity. When the
+> verbs on a single arrow would exceed two/three, a sub-entity is split
+> out (e.g. `Lesson`, `Grade`, `Request`, `Comment`).
+>
+> View-only interactions (browse courses, read transcript, open inbox)
+> are intentionally omitted — only state changes are shown.
+
+```mermaid
+flowchart LR
+    %% ==========================================================
+    %%  STYLES
+    %% ==========================================================
+    classDef stud  fill:#FDEBD0,stroke:#D35400,stroke-width:2px,color:#000
+    classDef emp   fill:#D6EAF8,stroke:#2980B9,stroke-width:2px,color:#000
+    classDef priv  fill:#F4ECF7,stroke:#8E44AD,stroke-width:2px,color:#000
+    classDef ent   fill:#FFFFFF,stroke:#2C3E50,stroke-width:2.5px,color:#000
+    classDef sub   fill:#FEF9E7,stroke:#B7950B,stroke-width:1.5px,color:#000
+    classDef cap   fill:#E8F8F5,stroke:#1ABC9C,stroke-width:2px,stroke-dasharray:5 3,color:#000
+
+    %% ==========================================================
+    %%  ACTORS  (roles around the perimeter)
+    %% ==========================================================
+    Student((🎓 Student / Grad)):::stud
+    Teacher((👨‍🏫 Teacher)):::emp
+    Manager((📊 Manager)):::emp
+    Librarian((📚 Librarian)):::emp
+    Tech((🛠️ TechSupport)):::emp
+    EmpRes((🔬 EmpResearcher)):::emp
+    Dean((👔 Dean)):::priv
+    Admin((🛡️ Admin)):::priv
+
+    %% Capability — Student / Teacher / EmpResearcher opt-in
+    Researcher{{🧪 Researcher}}:::cap
+
+    %% ==========================================================
+    %%  ENTITIES  (grouped by domain — labels are nouns only)
+    %% ==========================================================
+    subgraph ACAD [📚 Academics]
+        direction TB
+        Course[Course]:::ent
+        Lesson[Lesson]:::sub
+        Grade[Grade]:::sub
+        Request[Request]:::sub
+    end
+
+    subgraph LIB [📖 Library]
+        Book[Book]:::ent
+    end
+
+    subgraph COMM [💬 Communication]
+        direction TB
+        News[News]:::ent
+        Comment[Comment]:::sub
+        Message[Message]:::ent
+    end
+
+    subgraph OPS [⚙️ Operations]
+        direction TB
+        Order[IT Order]:::ent
+        Org[Organization]:::ent
+        Account[User Account]:::ent
+    end
+
+    subgraph RES [🔬 Research]
+        direction TB
+        Paper[Paper]:::ent
+        Project[Project]:::ent
+    end
+
+    %% ==========================================================
+    %%  STRUCTURAL RELATIONS  (dashed — "belongs to")
+    %% ==========================================================
+    Lesson  -.->|belongs to| Course
+    Grade   -.->|on Course| Course
+    Grade   -.->|of Student| Student
+    Comment -.->|on| News
+    Request -.->|may target| Course
+    Paper   -.->|published in| Project
+
+    %% ==========================================================
+    %%  ACADEMICS
+    %% ==========================================================
+    Student -->|enroll / drop| Course
+    Manager -->|create / configure / delete| Course
+    Manager -->|add| Lesson
+    Manager -->|assigns to course| Teacher
+    Teacher -->|teaches| Course
+    Teacher -->|record| Grade
+
+    Student -->|submit| Request
+    Manager -->|approve / reject| Request
+    Dean    -->|approve / reject| Request
+
+    %% ==========================================================
+    %%  LIBRARY
+    %% ==========================================================
+    Librarian -->|add / remove| Book
+    Student   -->|borrow / return| Book
+    Teacher   -->|borrow / return| Book
+
+    %% ==========================================================
+    %%  COMMUNICATION  (news + comments + DMs)
+    %% ==========================================================
+    Manager -->|publish / pin| News
+    Dean    -->|publish| News
+    Teacher -->|publish| News
+    Admin   -->|generate top-researcher| News
+
+    Student -->|write| Comment
+    Teacher -->|write| Comment
+    Manager -->|write| Comment
+
+    Student -->|send| Message
+    Teacher -->|send| Message
+    Manager -->|send| Message
+    Dean    -->|send| Message
+
+    %% ==========================================================
+    %%  OPERATIONS
+    %% ==========================================================
+    Teacher   -->|submit| Order
+    Manager   -->|submit| Order
+    Librarian -->|submit| Order
+    EmpRes    -->|submit| Order
+    Tech      -->|accept / complete| Order
+
+    Student -->|create / join| Org
+
+    Admin -->|create / delete| Account
+
+    %% ==========================================================
+    %%  RESEARCH  (capability-gated)
+    %% ==========================================================
+    Student -.->|become researcher| Researcher
+    Teacher -.->|become researcher| Researcher
+    EmpRes  -.->|always| Researcher
+
+    Researcher -->|publish| Paper
+    Researcher -->|create / join| Project
+    Researcher -->|subscribe / unsubscribe| Project
+
+    %% ==========================================================
+    %%  MISC
+    %% ==========================================================
+    Student -->|rate| Teacher
+    Teacher -->|complain about| Student
+```
+
+## Why sub-entities
+
+| Cluster that needed splitting | Without sub-entity | With sub-entity |
+|---|---|---|
+| Manager touches Course in 6 ways | `Manager --create/configure/delete/add-lesson/set-prereq/set-capacity/assign-teacher--> Course` (unreadable) | `Manager --create/configure/delete--> Course` + `Manager --add--> Lesson -.belongs-to.-> Course` |
+| Teacher records grades; Student sees them | `Teacher --record-marks-for-Student-in-Course--> ???` (3-way relation) | `Teacher --record--> Grade -.on.-> Course` + `Grade -.of.-> Student` |
+| Student↔Manager have request flow tied to Course | `Student --submit-request-about-Course--> Manager` (4-way) | `Student --submit--> Request -.may-target.-> Course` + `Manager --approve/reject--> Request` |
+| News supports comments | `Student --comment-on-News--> News` (verb hidden in noise) | `Student --write--> Comment -.on.-> News` |
+
+## How to read it
+
+- **Solid arrow** = an action a role performs on an entity (state change).
+- **Dashed arrow** = a structural relationship (sub-entity → parent, capability → role).
+- **Hexagonal node** (`Researcher`) = capability, opt-in for Student/Teacher and always-on for EmpResearcher.
+- **Light-yellow boxes** = sub-entities introduced solely to keep arrow labels short.
