@@ -104,28 +104,20 @@ flowchart LR
     %% ==========================================================
     %%  COMMUNICATION  (news + comments + DMs)
     %% ==========================================================
-    Manager -->|publish / pin| News
-    Dean    -->|publish| News
-    Teacher -->|publish| News
-    Admin   -->|generate top-researcher| News
+    %% Publish News — any Employee (Manager, Teacher, Dean, Librarian, Tech, EmpRes)
+    Manager & Teacher & Dean & Librarian & Tech & EmpRes -->|publish / pin| News
+    Admin -->|generate top-researcher| News
 
-    Student -->|write| Comment
-    Teacher -->|write| Comment
-    Manager -->|write| Comment
-
-    Student -->|send| Message
-    Teacher -->|send| Message
-    Manager -->|send| Message
-    Dean    -->|send| Message
+    %% Comments and DMs — every authenticated role (universal)
+    Student & Teacher & Manager & Dean & Librarian & Tech & EmpRes & Admin -->|write| Comment
+    Student & Teacher & Manager & Dean & Librarian & Tech & EmpRes & Admin -->|send| Message
 
     %% ==========================================================
     %%  OPERATIONS
     %% ==========================================================
-    Teacher   -->|submit| Order
-    Manager   -->|submit| Order
-    Librarian -->|submit| Order
-    EmpRes    -->|submit| Order
-    Tech      -->|accept / complete| Order
+    %% Submit IT order — any Employee
+    Manager & Teacher & Dean & Librarian & Tech & EmpRes -->|submit| Order
+    Tech -->|accept / complete| Order
 
     Student -->|create / join| Org
 
@@ -164,3 +156,15 @@ flowchart LR
 - **Dashed arrow** = a structural relationship (sub-entity → parent, capability → role).
 - **Hexagonal node** (`Researcher`) = capability, opt-in for Student/Teacher and always-on for EmpResearcher.
 - **Light-yellow boxes** = sub-entities introduced solely to keep arrow labels short.
+
+## Role groupings used in the diagram
+
+These multi-source arrows (written with Mermaid's `&` syntax) match the
+actual API gating:
+
+| Group | Members | Used for |
+|---|---|---|
+| Any authenticated role | Student, Teacher, Manager, Dean, Librarian, Tech, EmpRes, Admin | `write Comment`, `send Message` |
+| Any employee | Manager, Teacher, Dean, Librarian, Tech, EmpRes | `publish News`, `submit Order` |
+| Request approvers | Manager, Dean | `approve / reject Request` |
+| Book borrowers | Student, Teacher | `borrow / return Book` (only these two roles hold `BookBorrowerCapable`) |
