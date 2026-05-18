@@ -1,48 +1,88 @@
-# Compact Use-Case Diagram — entity-centric
+# Compact Use-Case Diagram — entity-centric, three-level
 
-> **Reading rule.** Roles sit on the perimeter, entities in the middle.
-> Each arrow is one or more verbs from a role onto an entity. When the
-> verbs on a single arrow would exceed two/three, a sub-entity is split
-> out (e.g. `Lesson`, `Grade`, `Request`, `Comment`).
+> **Three levels.**
+> **Left** — actor hierarchy (`User` → `Employee` → concrete roles).
+> **Centre** — action nodes `([...])` that absorb the role × verb explosion.
+>   An action node is introduced whenever ≥ 2 roles share the same verb(s)
+>   on the same entity; single-role single-verb interactions stay as direct
+>   arrows to the entity.
+> **Right** — domain entities, grouped by subdomain.
 >
-> View-only interactions (browse courses, read transcript, open inbox)
-> are intentionally omitted — only state changes are shown.
+> **Inheritance.** `User` and `Employee` carry the actions every role in
+> their subtree inherits. Concrete roles only add their *own* additional
+> actions. Dashed arrows inside the actor column show "extends".
 
 ```mermaid
 flowchart LR
-    %% ==========================================================
+    %% ============================================================
     %%  STYLES
-    %% ==========================================================
+    %% ============================================================
+    classDef abst  fill:#F8F9FA,stroke:#6C757D,stroke-width:2px,stroke-dasharray:6 4,color:#000
     classDef stud  fill:#FDEBD0,stroke:#D35400,stroke-width:2px,color:#000
     classDef emp   fill:#D6EAF8,stroke:#2980B9,stroke-width:2px,color:#000
     classDef priv  fill:#F4ECF7,stroke:#8E44AD,stroke-width:2px,color:#000
+    classDef cap   fill:#E8F8F5,stroke:#1ABC9C,stroke-width:2px,stroke-dasharray:5 3,color:#000
+    classDef act   fill:#EBF5FB,stroke:#2E86C1,stroke-width:1.5px,color:#000
     classDef ent   fill:#FFFFFF,stroke:#2C3E50,stroke-width:2.5px,color:#000
     classDef sub   fill:#FEF9E7,stroke:#B7950B,stroke-width:1.5px,color:#000
-    classDef cap   fill:#E8F8F5,stroke:#1ABC9C,stroke-width:2px,stroke-dasharray:5 3,color:#000
 
-    %% ==========================================================
-    %%  ACTORS  (roles around the perimeter)
-    %% ==========================================================
-    Student((🎓 Student / Grad)):::stud
-    Teacher((👨‍🏫 Teacher)):::emp
-    Manager((📊 Manager)):::emp
-    Librarian((📚 Librarian)):::emp
-    Tech((🛠️ TechSupport)):::emp
-    EmpRes((🔬 EmpResearcher)):::emp
-    Dean((👔 Dean)):::priv
-    Admin((🛡️ Admin)):::priv
+    %% ============================================================
+    %%  ACTORS & HIERARCHY  (left column)
+    %% ============================================================
+    subgraph ACTORS [Actors]
+        direction TB
 
-    %% Capability — Student / Teacher / EmpResearcher opt-in
-    Researcher{{🧪 Researcher}}:::cap
+        subgraph ABSTRACT [Abstract base roles]
+            direction TB
+            User((👤 User)):::abst
+            Employee((💼 Employee)):::abst
+            User -. extends .-> Employee
+        end
 
-    %% ==========================================================
-    %%  ENTITIES  (grouped by domain — labels are nouns only)
-    %% ==========================================================
+        subgraph STU_GRP [Students]
+            Student((🎓 Student / Grad)):::stud
+        end
+
+        subgraph EMP_GRP [Employees]
+            direction TB
+            Teacher((👨‍🏫 Teacher)):::emp
+            Manager((📊 Manager)):::emp
+            Dean((👔 Dean)):::priv
+            Librarian((📚 Librarian)):::emp
+            Tech((🛠️ TechSupport)):::emp
+            EmpRes((🔬 EmpResearcher)):::emp
+            Teacher -. extends .-> Dean
+        end
+
+        subgraph ADM_GRP [Administration]
+            Admin((🛡️ Admin)):::priv
+        end
+
+        %% Subgraph nesting shows containment; key inheritance arrows only:
+        User     -. extends .-> Student
+        User     -. extends .-> Admin
+        Employee -. extends .-> Teacher
+        Employee -. extends .-> Manager
+        Employee -. extends .-> Librarian
+        Employee -. extends .-> Tech
+        Employee -. extends .-> EmpRes
+
+        %% Capability — opt-in for Student/Teacher/EmpRes
+        Researcher{{🧪 Researcher}}:::cap
+        Student -. become researcher .-> Researcher
+        Teacher -. become researcher .-> Researcher
+        EmpRes  -. always .-> Researcher
+    end
+
+    %% ============================================================
+    %%  ENTITIES  (right column)
+    %% ============================================================
     subgraph ACAD [📚 Academics]
         direction TB
         Course[Course]:::ent
         Lesson[Lesson]:::sub
         Grade[Grade]:::sub
+        Transcript[Transcript]:::sub
         Request[Request]:::sub
     end
 
@@ -62,6 +102,7 @@ flowchart LR
         Order[IT Order]:::ent
         Org[Organization]:::ent
         Account[User Account]:::ent
+        Log[System Log]:::ent
     end
 
     subgraph RES [🔬 Research]
@@ -70,101 +111,178 @@ flowchart LR
         Project[Project]:::ent
     end
 
-    %% ==========================================================
-    %%  STRUCTURAL RELATIONS  (dashed — "belongs to")
-    %% ==========================================================
-    Lesson  -.->|belongs to| Course
-    Grade   -.->|on Course| Course
-    Grade   -.->|of Student| Student
-    Comment -.->|on| News
-    Request -.->|may target| Course
-    Paper   -.->|published in| Project
+    %% ============================================================
+    %%  STRUCTURAL RELATIONS  (entity internals, dashed)
+    %% ============================================================
+    Lesson     -. belongs to .-> Course
+    Grade      -. part of .->   Transcript
+    Grade      -. for Student .-> Student
+    Transcript -. summarises .-> Course
+    Comment    -. on .->        News
+    Request    -. may target .-> Course
+    Paper      -. published in .-> Project
 
-    %% ==========================================================
-    %%  ACADEMICS
-    %% ==========================================================
+    %% ============================================================
+    %%  ACTION NODES  (centre — pill shape)
+    %%  Named AC_* to avoid collisions
+    %% ============================================================
+
+    %% --- Universal (every User) ---
+    AC_BrowseCourses([Browse Courses]):::act
+    AC_BrowseBooks([Browse Books]):::act
+    AC_ReadNews([Read News]):::act
+    AC_Message([Send / Read Message]):::act
+    AC_Comment([Write Comment]):::act
+    AC_SubmitRequest([Submit / Track Request]):::act
+    AC_BrowseResearch([Browse Papers & Projects]):::act
+
+    %% --- Employee-level (every Employee) ---
+    AC_PublishNews([Publish / Pin News]):::act
+    AC_SubmitOrder([Submit IT Order]):::act
+
+    %% --- Shared: Student + Teacher ---
+    AC_BorrowBook([Borrow / Return Book]):::act
+
+    %% --- Shared: Teacher + Dean ---
+    AC_Teach([Teach / View Taught Courses]):::act
+    AC_ViewGrades([View Student Grades]):::act
+
+    %% --- Shared: Manager + Dean ---
+    AC_ProcessRequest([Approve / Reject Request]):::act
+    AC_ViewAllRequests([View All Requests]):::act
+
+    %% ============================================================
+    %%  USER → ACTION NODES  (universal, abstract)
+    %% ============================================================
+    User --> AC_BrowseCourses
+    User --> AC_BrowseBooks
+    User --> AC_ReadNews
+    User --> AC_Message
+    User --> AC_Comment
+    User --> AC_SubmitRequest
+    User --> AC_BrowseResearch
+
+    %% ============================================================
+    %%  EMPLOYEE → ACTION NODES  (employee-level, abstract)
+    %% ============================================================
+    Employee --> AC_PublishNews
+    Employee --> AC_SubmitOrder
+
+    %% ============================================================
+    %%  STUDENT  (own actions only — inherits User)
+    %% ============================================================
     Student -->|enroll / drop| Course
+    Student -->|view| Transcript
+    Student --> AC_BorrowBook
+    Student -->|create / join| Org
+    Student -->|rate| Teacher
+
+    %% ============================================================
+    %%  TEACHER  (own actions + shared — inherits Employee)
+    %% ============================================================
+    Teacher --> AC_BorrowBook
+    Teacher --> AC_Teach
+    Teacher -->|record| Grade
+    Teacher --> AC_ViewGrades
+    Teacher -->|complain about| Student
+
+    %% ============================================================
+    %%  MANAGER  (own actions + shared — inherits Employee)
+    %% ============================================================
     Manager -->|create / configure / delete| Course
     Manager -->|add| Lesson
-    Manager -->|assigns to course| Teacher
-    Teacher -->|teaches| Course
-    Teacher -->|record| Grade
+    Manager -->|assign to course| Teacher
+    Manager --> AC_ProcessRequest
+    Manager --> AC_ViewAllRequests
+    Manager -->|generate| Transcript
 
-    Student -->|submit| Request
-    Manager -->|approve / reject| Request
-    Dean    -->|approve / reject| Request
+    %% ============================================================
+    %%  DEAN  (extends Teacher — inherits Employee)
+    %% ============================================================
+    Dean --> AC_Teach
+    Dean --> AC_ViewGrades
+    Dean --> AC_ProcessRequest
+    Dean --> AC_ViewAllRequests
 
-    %% ==========================================================
-    %%  LIBRARY
-    %% ==========================================================
+    %% ============================================================
+    %%  LIBRARIAN  (inherits Employee)
+    %% ============================================================
     Librarian -->|add / remove| Book
-    Student   -->|borrow / return| Book
-    Teacher   -->|borrow / return| Book
 
-    %% ==========================================================
-    %%  COMMUNICATION  (news + comments + DMs)
-    %% ==========================================================
-    %% Publish News — any Employee (Manager, Teacher, Dean, Librarian, Tech, EmpRes)
-    Manager & Teacher & Dean & Librarian & Tech & EmpRes -->|publish / pin| News
-    Admin -->|generate top-researcher| News
-
-    %% Comments and DMs — every authenticated role (universal)
-    Student & Teacher & Manager & Dean & Librarian & Tech & EmpRes & Admin -->|write| Comment
-    Student & Teacher & Manager & Dean & Librarian & Tech & EmpRes & Admin -->|send| Message
-
-    %% ==========================================================
-    %%  OPERATIONS
-    %% ==========================================================
-    %% Submit IT order — any Employee
-    Manager & Teacher & Dean & Librarian & Tech & EmpRes -->|submit| Order
+    %% ============================================================
+    %%  TECH SUPPORT  (inherits Employee)
+    %% ============================================================
+    Tech -->|view queue| Order
     Tech -->|accept / complete| Order
 
-    Student -->|create / join| Org
-
+    %% ============================================================
+    %%  ADMIN
+    %% ============================================================
     Admin -->|create / delete| Account
+    Admin -->|view| Log
+    Admin -->|generate top-researcher| News
 
-    %% ==========================================================
-    %%  RESEARCH  (capability-gated)
-    %% ==========================================================
-    Student -.->|become researcher| Researcher
-    Teacher -.->|become researcher| Researcher
-    EmpRes  -.->|always| Researcher
-
+    %% ============================================================
+    %%  RESEARCHER  (capability)
+    %% ============================================================
     Researcher -->|publish| Paper
+    Researcher -->|generate citation| Paper
     Researcher -->|create / join| Project
     Researcher -->|subscribe / unsubscribe| Project
 
-    %% ==========================================================
-    %%  MISC
-    %% ==========================================================
-    Student -->|rate| Teacher
-    Teacher -->|complain about| Student
+    %% ============================================================
+    %%  ACTION NODES → ENTITIES
+    %% ============================================================
+    AC_BrowseCourses --> Course
+    AC_BrowseBooks   --> Book
+    AC_ReadNews      --> News
+    AC_Message       --> Message
+    AC_Comment       --> Comment
+    AC_SubmitRequest --> Request
+    AC_BrowseResearch --> Paper
+    AC_BrowseResearch --> Project
+    AC_PublishNews   --> News
+    AC_SubmitOrder   --> Order
+    AC_BorrowBook    --> Book
+    AC_Teach         --> Course
+    AC_ViewGrades    --> Grade
+    AC_ProcessRequest --> Request
+    AC_ViewAllRequests --> Request
 ```
 
-## Why sub-entities
+## Action node decision guide
 
-| Cluster that needed splitting | Without sub-entity | With sub-entity |
+An action node `([...])` is placed between roles and an entity when two or more
+roles share the same verb set on that entity. Single-role single-verb interactions
+use a direct labelled arrow.
+
+| Action node | Roles that feed it | Why a node (not direct arrows) |
 |---|---|---|
-| Manager touches Course in 6 ways | `Manager --create/configure/delete/add-lesson/set-prereq/set-capacity/assign-teacher--> Course` (unreadable) | `Manager --create/configure/delete--> Course` + `Manager --add--> Lesson -.belongs-to.-> Course` |
-| Teacher records grades; Student sees them | `Teacher --record-marks-for-Student-in-Course--> ???` (3-way relation) | `Teacher --record--> Grade -.on.-> Course` + `Grade -.of.-> Student` |
-| Student↔Manager have request flow tied to Course | `Student --submit-request-about-Course--> Manager` (4-way) | `Student --submit--> Request -.may-target.-> Course` + `Manager --approve/reject--> Request` |
-| News supports comments | `Student --comment-on-News--> News` (verb hidden in noise) | `Student --write--> Comment -.on.-> News` |
+| Browse Courses | every role (`User`) | 9 roles × 1 verb = 9 arrows avoided |
+| Browse Books | every role (`User`) | same |
+| Read News | every role (`User`) | same |
+| Send / Read Message | every role (`User`) | same |
+| Write Comment | every role (`User`) | same |
+| Submit / Track Request | every role (`User`) | same |
+| Browse Papers & Projects | every role (`User`) | same |
+| Publish / Pin News | 6 employees (`Employee`) | 6 arrows avoided |
+| Submit IT Order | 6 employees (`Employee`) | 6 arrows avoided |
+| Borrow / Return Book | Student + Teacher | 2 roles × 2 verbs = 4 arrows → 1 node |
+| Teach / View Taught | Teacher + Dean | 2 roles share same relationship |
+| View Student Grades | Teacher + Dean | 2 roles, same view |
+| Approve / Reject Request | Manager + Dean | 2 roles × 2 verbs = 4 arrows → 1 node |
+| View All Requests | Manager + Dean | 2 roles, same view |
 
-## How to read it
+## Inheritance
 
-- **Solid arrow** = an action a role performs on an entity (state change).
-- **Dashed arrow** = a structural relationship (sub-entity → parent, capability → role).
-- **Hexagonal node** (`Researcher`) = capability, opt-in for Student/Teacher and always-on for EmpResearcher.
-- **Light-yellow boxes** = sub-entities introduced solely to keep arrow labels short.
+`User` and `Employee` carry the universal actions (action nodes they feed);
+their subtree concrete roles inherit everything and only annotate their own
+additions. This prevents repeating Browse Courses / Read News / etc. for
+every individual role.
 
-## Role groupings used in the diagram
-
-These multi-source arrows (written with Mermaid's `&` syntax) match the
-actual API gating:
-
-| Group | Members | Used for |
+| Abstract | Extends from | Concrete members |
 |---|---|---|
-| Any authenticated role | Student, Teacher, Manager, Dean, Librarian, Tech, EmpRes, Admin | `write Comment`, `send Message` |
-| Any employee | Manager, Teacher, Dean, Librarian, Tech, EmpRes | `publish News`, `submit Order` |
-| Request approvers | Manager, Dean | `approve / reject Request` |
-| Book borrowers | Student, Teacher | `borrow / return Book` (only these two roles hold `BookBorrowerCapable`) |
+| `User` | — | Student/Grad, Admin, + all employees |
+| `Employee` | `User` | Teacher, Manager, Dean, Librarian, TechSupport, EmpResearcher |
+| `Dean` | `Teacher` (→`Employee`→`User`) | — (leaf) |
+| `Researcher` | capability node, not a role | opt-in for Student/Teacher/EmpRes |
