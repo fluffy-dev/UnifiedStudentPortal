@@ -46,10 +46,10 @@ The data directory is created automatically on first run if it does not exist.
 
 ## Frontend API Base URL
 
-The frontend reads the API base URL from `frontend/.env`:
+The frontend API base URL is hardcoded in `frontend/src/api/client.js`:
 
-```
-VITE_API_URL=http://localhost:8080
+```js
+const BASE = "http://localhost:8080/api";
 ```
 
-Change this to point to a different backend host or port.
+To point to a different backend host or port, update this constant and restart the dev server.
