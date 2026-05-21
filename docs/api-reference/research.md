@@ -71,18 +71,19 @@ Publish a research paper.
 
 ---
 
-### GET /api/papers/{id}/cite/{format}
+### GET /api/papers/{id}/cite
 
 Generate a citation for a paper.
 
 **Role required:** Any authenticated user
 
-**Path parameter `format`:** `PLAIN_TEXT` or `BIBTEX`
+**Format header (optional):** `X-Citation-Format: PLAIN_TEXT` or `X-Citation-Format: BIBTEX`. Defaults to `PLAIN_TEXT`.
 
 **Example:**
 ```bash
-curl http://localhost:8080/api/papers/1/cite/PLAIN_TEXT \
-  -H "Authorization: Bearer <token>"
+curl http://localhost:8080/api/papers/1/cite \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Citation-Format: BIBTEX"
 ```
 
 **Response:**

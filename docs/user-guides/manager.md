@@ -23,7 +23,8 @@ discipline type (MAJOR, MINOR, or FREE), and capacity (max seats).
 Managers see all help requests submitted by any user. Each request can be approved,
 rejected, or left pending. Common request types include:
 
-- `TRANSCRIPT` — transcript or certificate
+- `TRANSCRIPT_FOR_SEMESTER` — semester transcript
+- `TRANSCRIPT_FOR_YEAR` — year transcript
 - `ACADEMIC_MOBILITY` — mobility program request
 - `COORDINATION_OF_DIPLOMA_TOPIC` — diploma topic approval
 - `REQUEST_FOR_CREATING_ORGANIZATION` — student org creation

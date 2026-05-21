@@ -78,9 +78,9 @@ Create a new student account.
 }
 ```
 
-Valid `faculty` values: `COMPUTER_SCIENCE`, `MATH`, `PHYSICS`, `CHEMISTRY`, `BIOLOGY`, `HISTORY`, `ECONOMICS`.
+Valid `faculty` values: `SITE`, `SEOGI`, `SG`, `KMA`, `ISE`, `BS`.
 
-Valid `degreeType` values: `BACHELOR`, `MASTER`.
+Valid `degreeType` values: `BACHELOR`, `MASTER`, `DOCTORATE`.
 
 **Response:** `201 Created` with the created user object.
 

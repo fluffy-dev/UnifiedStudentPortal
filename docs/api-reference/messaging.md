@@ -230,7 +230,7 @@ Process a request (approve or reject).
 { "status": "APPROVED" }
 ```
 
-Valid `status` values: `PENDING`, `APPROVED`, `REJECTED`, `NOT_APPROVED`.
+Valid `status` values: `PENDING`, `ACCEPTED`, `APPROVED`, `REJECTED`, `NOT_APPROVED`.
 
 **Response:**
 ```json
