@@ -1,0 +1,79 @@
+site_name: University Management System
+site_description: A full-stack university lifecycle system built in Java 17+ with Clean Architecture
+site_author: Rauan
+
+exclude_docs: |
+  PROJECT_ANALYSIS.md
+  OOP_Final_Project_Review.md
+  superpowers/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Configuration: getting-started/configuration.md
+      - Demo Accounts: getting-started/demo-accounts.md
+  - User Guides:
+      - Student: user-guides/student.md
+      - Teacher: user-guides/teacher.md
+      - Dean: user-guides/dean.md
+      - Admin: user-guides/admin.md
+      - Manager: user-guides/manager.md
+      - Librarian: user-guides/librarian.md
+      - Tech Support: user-guides/tech-support.md
+      - Employee Researcher: user-guides/employee-researcher.md
+      - Researcher: user-guides/researcher.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Highlights: architecture/highlights.md
+      - Class Interactions: architecture/interactions.md
+      - Domain Model: architecture/domain-model.md
+      - Design Patterns: architecture/design-patterns.md
+      - Persistence: architecture/persistence.md
+      - Frontend: architecture/frontend.md
+  - API Reference:
+      - Overview: api-reference/overview.md
+      - Users: api-reference/users.md
+      - Courses: api-reference/courses.md
+      - Messaging: api-reference/messaging.md
+      - Research: api-reference/research.md
+      - Library: api-reference/library.md
+  - Developer Guide:
+      - Running Tests: developer-guide/running-tests.md
+      - Adding Use Cases: developer-guide/adding-use-cases.md
+      - Internationalization: developer-guide/i18n.md
