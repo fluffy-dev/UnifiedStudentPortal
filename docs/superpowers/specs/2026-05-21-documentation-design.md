@@ -33,6 +33,8 @@ docs/
 │   ├── admin.md
 │   ├── manager.md
 │   ├── librarian.md
+│   ├── tech-support.md
+│   ├── employee-researcher.md
 │   └── researcher.md
 ├── architecture/
 │   ├── overview.md
@@ -113,6 +115,8 @@ nav:
       - Admin: user-guides/admin.md
       - Manager: user-guides/manager.md
       - Librarian: user-guides/librarian.md
+      - Tech Support: user-guides/tech-support.md
+      - Employee Researcher: user-guides/employee-researcher.md
       - Researcher: user-guides/researcher.md
   - Architecture:
       - Overview: architecture/overview.md
@@ -193,12 +197,14 @@ Roles and their key features:
 
 | Role | Key features to document |
 |------|--------------------------|
-| Student | Enroll/drop courses, view grades, attestation, library borrowing, messaging, research (if activated), organizations |
+| Student | Enroll/drop courses, view grades, attestation, library borrowing, messaging, research (if activated), organizations. Graduate Student (Master) is a subclass — covered as a subsection here |
 | Teacher | Record marks, manage courses, rate students, research, messaging |
 | Dean | Manage department, handle complaints, oversee teachers |
 | Admin | Create/delete users, generate reports, system management |
 | Manager | Handle requests, create IT orders |
 | Librarian | Process book borrowing and returns |
+| Tech Support | Handle IT orders, tech support tickets |
+| Employee Researcher | Research as an employee — papers, projects, journals |
 | Researcher | Publish papers, manage projects, subscribe to journals, set supervisor |
 
 ### 6.4 Architecture
@@ -250,7 +256,7 @@ Roles and their key features:
 
 **`overview.md`**
 - Base URL: `http://localhost:8080`
-- Authentication mechanism (session/token)
+- Authentication: Bearer token — `POST /api/login` returns a token, passed as `Authorization: Bearer <token>` on subsequent requests
 - Standard error response format
 - HTTP status codes used
 
