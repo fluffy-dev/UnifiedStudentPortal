@@ -22,6 +22,15 @@ public final class MapperHelpers {
         return out;
     }
 
+    public static List<Integer> readInts(JsonValue.JsonObject obj, String key) {
+        if (!obj.fields().containsKey(key)) return List.of();
+        JsonValue v = obj.fields().get(key);
+        if (v.isNull()) return List.of();
+        List<Integer> out = new ArrayList<>();
+        for (JsonValue item : v.asArray()) out.add(item.asInt());
+        return out;
+    }
+
     public static String readString(JsonValue.JsonObject obj, String key) {
         JsonValue v = obj.fields().get(key);
         return (v == null || v.isNull()) ? null : v.asString();

@@ -93,6 +93,7 @@ public final class UserMapper implements EntityMapper<User, Username> {
         b.put("degree", t.degree());
         b.put("position", t.position().name());
         b.putStrings("taughtCourses", t.taughtCourses().stream().map(CourseId::value).toList());
+        b.putInts("ratings", t.ratings()); // previously missing — wiped on every restart
         writeResearcherFields(b, t);
     }
 
@@ -188,8 +189,10 @@ public final class UserMapper implements EntityMapper<User, Username> {
     }
 
     private void restoreTeacherState(JsonValue.JsonObject o, Teacher t) {
-        for (String cid : MapperHelpers.readStrings(o, "taughtCourses"))
-            t.recordCourseAssignment(new CourseId(cid));
+        List<CourseId> taught  = MapperHelpers.readStrings(o, "taughtCourses")
+                .stream().map(CourseId::new).toList();
+        List<Integer>  ratings = MapperHelpers.readInts(o, "ratings");
+        t.rehydrate(taught, ratings);
     }
 
     private Manager buildManager(JsonValue.JsonObject o, Username u, String h, PersonName n, Gender g,

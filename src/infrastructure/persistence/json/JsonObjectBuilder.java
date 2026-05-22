@@ -22,6 +22,12 @@ public final class JsonObjectBuilder {
         fields.put(key, new JsonValue.JsonArray(arr));
         return this;
     }
+    public JsonObjectBuilder putInts(String key, Iterable<Integer> values) {
+        List<JsonValue> arr = new ArrayList<>();
+        for (int v : values) arr.add(JsonValue.of(v));
+        fields.put(key, new JsonValue.JsonArray(arr));
+        return this;
+    }
     public JsonObjectBuilder putObjects(String key, List<JsonValue> objects) {
         fields.put(key, new JsonValue.JsonArray(objects));
         return this;
