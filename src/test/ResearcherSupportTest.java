@@ -50,7 +50,8 @@ public final class ResearcherSupportTest {
         phys.recordGrade(s.username(), new Grade(20, 20, 40));
         repo.save(math); repo.save(phys);
         double gpa = new GpaCalculator(repo).of(s);
-        Assert.equals(90.0, gpa, "Average of 100 and 80 should be 90");
+        // A (100/100) = 4.0 pts, B (80/100) = 3.0 pts → average = 3.5 on 4.0 scale
+        Assert.equals(3.5, gpa, "GPA: A(4.0) + B(3.0) / 2 = 3.5");
     }
 
     private static void testPlainCitation() {

@@ -157,11 +157,17 @@ public final class CourseController {
 
         List<JsonValue> lines = new ArrayList<>();
         for (var line : t.lines()) {
-            lines.add(JsonObjectBuilder.create()
-                    .put("course", line.courseName())
-                    .put("letter", line.letter())
-                    .put("total",  line.total())
-                    .build());
+            JsonObjectBuilder lb = JsonObjectBuilder.create()
+                    .put("course",     line.courseName())
+                    .put("letter",     line.letter())
+                    .put("total",      line.total())
+                    .put("passing",    line.passing());
+            if (line.firstHalf() >= 0) {
+                lb.put("firstHalf",  line.firstHalf())
+                  .put("secondHalf", line.secondHalf())
+                  .put("exam",       line.exam());
+            }
+            lines.add(lb.build());
         }
         return HttpResponse.ok(JsonObjectBuilder.create()
                 .put("student",   t.fullName())
