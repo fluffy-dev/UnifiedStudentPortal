@@ -165,7 +165,7 @@ export function Login() {
         {/* Mobile demo accounts */}
         {showAccounts && (
           <div className="card" style={{ marginTop: 8, padding: 0, overflow: "hidden" }}>
-            <DemoAccountsTable onSelect={quickLogin} />
+            <DemoAccountsTable onSelect={quickLogin} t={t} />
           </div>
         )}
       </div>
@@ -177,7 +177,7 @@ export function Login() {
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{t("ui.demo_accounts")}</div>
             <div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 2 }}>{t("ui.demo_password_hint")}</div>
           </div>
-          <DemoAccountsTable onSelect={quickLogin} />
+          <DemoAccountsTable onSelect={quickLogin} t={t} />
         </div>
       </div>
 
@@ -191,7 +191,7 @@ export function Login() {
   );
 }
 
-function DemoAccountsTable({ onSelect }) {
+function DemoAccountsTable({ onSelect, t }) {
   return (
     <div style={{ overflowY: "auto", maxHeight: 480 }}>
       {DEMO_ACCOUNTS.map(group => (
