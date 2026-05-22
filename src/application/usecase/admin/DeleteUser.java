@@ -15,6 +15,7 @@ public final class DeleteUser {
     }
 
     public Result execute(Username actor, Username target) {
+        if (actor.equals(target)) return Result.fail("Cannot delete your own account.");
         if (!users.exists(target)) return Result.fail("User not found.");
         users.delete(target);
         logger.log(actor, "Deleted user: " + target);
