@@ -28,6 +28,7 @@ import application.usecase.messaging.AcceptOrder;
 import application.usecase.messaging.CommentOnNews;
 import application.usecase.messaging.CompleteOrder;
 import application.usecase.messaging.CreateITOrder;
+import application.usecase.messaging.PinNews;
 import application.usecase.messaging.ProcessRequest;
 import application.usecase.messaging.PublishNews;
 import application.usecase.messaging.SendMessage;
@@ -123,6 +124,7 @@ public final class AppContext {
     public final AcceptOrder acceptOrder;
     public final CompleteOrder completeOrder;
     public final PublishNews publishNews;
+    public final PinNews pinNews;
     public final PublishPaper publishPaper;
     public final CreateResearchProject createProject;
     public final SubscribeToJournal subscribeToJournal;
@@ -182,7 +184,7 @@ public final class AppContext {
         ));
         this.roomScheduler = new RoomScheduler(courseRepository);
         this.gpaCalculator = new GpaCalculator(courseRepository);
-        this.paperPublisher = new PaperPublisher(paperRepository, projectRepository, notificationRepository, newsRepository, userRepository);
+        this.paperPublisher = new PaperPublisher(paperRepository, projectRepository, notificationRepository, newsRepository, userRepository, newsIds);
         this.subscriptionService = new SubscriptionService(projectRepository);
 
         this.becomeResearcher = new BecomeResearcher(logger);
@@ -205,6 +207,7 @@ public final class AppContext {
         this.acceptOrder = new AcceptOrder(orderRepository, logger);
         this.completeOrder = new CompleteOrder(orderRepository, messageRepository, messageIds, logger);
         this.publishNews = new PublishNews(newsRepository, newsIds, logger);
+        this.pinNews = new PinNews(newsRepository, logger);
         this.publishPaper = new PublishPaper(paperPublisher, paperIds, logger);
         this.createProject = new CreateResearchProject(projectRepository, projectIds, logger);
         this.subscribeToJournal = new SubscribeToJournal(subscriptionService, userRepository, logger);

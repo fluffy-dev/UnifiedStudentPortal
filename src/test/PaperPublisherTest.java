@@ -44,7 +44,8 @@ public final class PaperPublisherTest {
         new BecomeResearcher(new RepositoryLogger(logs)).execute(author, "AI");
         users.save(author);
 
-        PaperPublisher publisher = new PaperPublisher(papers, projects, notifications, news, users);
+        IdSequence newsIds = new IdSequence();
+        PaperPublisher publisher = new PaperPublisher(papers, projects, notifications, news, users, newsIds);
         PublishPaper publishPaper = new PublishPaper(publisher, new IdSequence(), new RepositoryLogger(logs));
         Result r = publishPaper.execute(author, "Hello AI", "AI Journal", "abs", 5, null);
 
@@ -65,7 +66,8 @@ public final class PaperPublisherTest {
         new BecomeResearcher(new RepositoryLogger(logs)).execute(author, "AI");
         users.save(author);
 
-        PaperPublisher publisher = new PaperPublisher(papers, projects, notifications, news, users);
+        IdSequence newsIds = new IdSequence();
+        PaperPublisher publisher = new PaperPublisher(papers, projects, notifications, news, users, newsIds);
         new PublishPaper(publisher, new IdSequence(), new RepositoryLogger(logs))
                 .execute(author, "Hello AI", "AnyJournal", "abs", 5, null);
 
