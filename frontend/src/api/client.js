@@ -12,6 +12,14 @@ export async function request(method, path, body) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("role");
+    localStorage.removeItem("isResearcher");
+    window.location.assign("/login");
+    return;
+  }
   const data = await res.json().catch(() => ({ error: res.statusText }));
   if (!res.ok) throw new Error(data.error || data.message || res.statusText);
   return data;

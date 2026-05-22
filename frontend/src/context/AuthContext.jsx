@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", token);
     localStorage.setItem("username", username);
     localStorage.setItem("role", role);
-    localStorage.setItem("isResearcher", isResearcher);
-    setAuth({ token, username, role, isResearcher });
+    localStorage.setItem("isResearcher", String(Boolean(isResearcher)));
+    setAuth({ token, username, role, isResearcher: Boolean(isResearcher) });
   }
 
   function signOut() {
@@ -29,8 +29,8 @@ export function AuthProvider({ children }) {
   }
 
   function updateResearcherStatus(status) {
-    localStorage.setItem("isResearcher", status);
-    setAuth(prev => prev ? { ...prev, isResearcher: status } : null);
+    localStorage.setItem("isResearcher", String(Boolean(status)));
+    setAuth(prev => prev ? { ...prev, isResearcher: Boolean(status) } : null);
   }
 
   return (

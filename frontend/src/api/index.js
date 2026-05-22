@@ -14,7 +14,9 @@ export const getReport    = ()         => get("/reports/academic");
 export const listCourses  = ()            => get("/courses");
 export const getCourse    = (id)          => get(`/courses/${id}`);
 export const createCourse = (data)        => post("/courses", data);
-export const enroll       = (id)          => post(`/courses/${id}/enroll`);
+export const assignTeacher = (id, data)   => post(`/courses/${id}/teachers`, data);
+export const addLesson     = (id, data)   => post(`/courses/${id}/lessons`, data);
+export const enroll        = (id)         => post(`/courses/${id}/enroll`);
 export const drop         = (id)          => post(`/courses/${id}/drop`);
 export const recordMarks  = (id, data)    => post(`/courses/${id}/marks`, data);
 export const viewGrades   = (id)          => get(`/courses/${id}/grades`);
@@ -27,9 +29,11 @@ export const borrowBook = (title)  => post(`/books/${encodeURIComponent(title)}/
 export const returnBook = (title)  => post(`/books/${encodeURIComponent(title)}/return`);
 
 export const inbox         = ()     => get("/messages/inbox");
+export const sentMessages  = ()     => get("/messages/sent");
 export const sendMessage   = (data) => post("/messages", data);
 export const listNews      = ()     => get("/news");
 export const publishNews   = (data) => post("/news", data);
+export const pinNews       = (id, pinned) => put(`/news/${id}/pin`, { pinned });
 export const commentOnNews = (id, comment) => post(`/news/${id}/comment`, { comment });
 export const listRequests   = ()              => get("/requests");
 export const submitRequest  = (data)           => post("/requests", data);
@@ -45,6 +49,9 @@ export const getCitation   = (id, fmt) => get(`/papers/${id}/cite?format=${fmt}`
 export const listProjects  = ()        => get("/projects");
 export const createProject = (data)    => post("/projects", data);
 export const joinProject   = (journal) => post(`/projects/${encodeURIComponent(journal)}/join`);
+export const listNotifications  = ()         => get("/notifications");
+export const clearNotifications = ()         => del("/notifications");
+export const listSubscriptions  = ()         => get("/subscriptions");
 export const subscribe        = (journal) => post("/subscriptions", { journal });
 export const unsubscribe      = (journal) => del(`/subscriptions/${encodeURIComponent(journal)}`);
 export const becomeResearcher = (field)   => post("/research/become", { field });
