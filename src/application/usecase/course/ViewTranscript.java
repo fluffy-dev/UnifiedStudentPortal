@@ -21,7 +21,7 @@ public final class ViewTranscript {
             boolean passing) {}
 
     public record Transcript(String fullName, String degreeType, int year,
-                             int failCount, double gpa, List<TranscriptLine> lines) {}
+                             int failCount, Double gpa, List<TranscriptLine> lines) {}
 
     private final CourseRepository courses;
     private final GpaCalculator gpa;

@@ -49,8 +49,9 @@ public final class ResearcherSupportTest {
         math.recordGrade(s.username(), new Grade(30, 30, 40));
         phys.recordGrade(s.username(), new Grade(20, 20, 40));
         repo.save(math); repo.save(phys);
-        double gpa = new GpaCalculator(repo).of(s);
+        Double gpa = new GpaCalculator(repo).of(s);
         // A (100/100) = 4.0 pts, B (80/100) = 3.0 pts → average = 3.5 on 4.0 scale
+        Assert.isTrue(gpa != null, "GPA must not be null when grades exist");
         Assert.equals(3.5, gpa, "GPA: A(4.0) + B(3.0) / 2 = 3.5");
     }
 

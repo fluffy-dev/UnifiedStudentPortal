@@ -169,12 +169,13 @@ public final class CourseController {
             }
             lines.add(lb.build());
         }
-        return HttpResponse.ok(JsonObjectBuilder.create()
+        JsonObjectBuilder resp = JsonObjectBuilder.create()
                 .put("student",   t.fullName())
                 .put("degree",    t.degreeType())
                 .put("year",      t.year())
-                .put("failCount", t.failCount())
-                .put("gpa",       t.gpa())
+                .put("failCount", t.failCount());
+        if (t.gpa() != null) resp.put("gpa", t.gpa()); // omit when no finalisable grades
+        return HttpResponse.ok(resp
                 .putObjects("courses", lines)
                 .build());
     }
