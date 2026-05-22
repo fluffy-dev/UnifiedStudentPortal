@@ -124,6 +124,7 @@ public final class CourseController {
         JsonValue.JsonObject body = request.body();
 
         String studentUsername = str(body, "studentUsername");
+        if (studentUsername.isBlank()) return HttpResponse.badRequest("'studentUsername' is required.");
         int firstHalf  = intVal(body, "firstHalf");
         int secondHalf = intVal(body, "secondHalf");
         int exam       = intVal(body, "exam");

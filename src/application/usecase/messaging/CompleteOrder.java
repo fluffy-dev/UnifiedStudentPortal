@@ -26,6 +26,8 @@ public final class CompleteOrder {
     public Result execute(TechSupport tech, int orderId) {
         Order o = orders.findById(orderId).orElse(null);
         if (o == null) return Result.fail("Order not found.");
+        if (o.status() != domain.enums.OrderStatus.ACCEPTED)
+            return Result.fail("Order must be accepted before it can be completed.");
         o.complete();
         orders.save(o);
         messages.save(new Message(msgIds.next(), tech.username(), o.requester(),

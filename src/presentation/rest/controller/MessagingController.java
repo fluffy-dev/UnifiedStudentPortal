@@ -54,6 +54,8 @@ public final class MessagingController {
         String msgBody   = str(body, "body");
         String urgency   = str(body, "urgency");
 
+        if (recipient.isBlank()) return HttpResponse.badRequest("'recipient' is required.");
+        if (subject.isBlank())   return HttpResponse.badRequest("'subject' is required.");
         try {
             UrgencyLevel level = UrgencyLevel.valueOf(urgency.toUpperCase());
             Result result = ctx.sendMessage.execute(user.username(), new Username(recipient),
@@ -110,9 +112,11 @@ public final class MessagingController {
     /** POST /api/news/{id}/comment */
     public HttpResponse commentOnNews(HttpRequest request) {
         User   user    = RequestContext.current();
-        String idStr   = request.pathSegment(2).orElse("0");
         String comment = str(request.body(), "comment");
-        Result result  = ctx.commentOnNews.execute(user, Integer.parseInt(idStr), comment);
+        int id;
+        try { id = Integer.parseInt(request.pathSegment(2).orElse("")); }
+        catch (NumberFormatException e) { return HttpResponse.badRequest("Invalid news id."); }
+        Result result  = ctx.commentOnNews.execute(user, id, comment);
         return resultToResponse(result);
     }
 
@@ -201,7 +205,9 @@ public final class MessagingController {
     /** PUT /api/orders/{id}/accept — TechSupport only */
     public HttpResponse acceptOrder(HttpRequest request) {
         domain.user.TechSupport tech = (domain.user.TechSupport) RequestContext.current();
-        int id = Integer.parseInt(request.pathSegment(2).orElse("0"));
+        int id;
+        try { id = Integer.parseInt(request.pathSegment(2).orElse("")); }
+        catch (NumberFormatException e) { return HttpResponse.badRequest("Invalid order id."); }
         Result result = ctx.acceptOrder.execute(tech, id);
         return resultToResponse(result);
     }
@@ -209,7 +215,9 @@ public final class MessagingController {
     /** PUT /api/orders/{id}/complete — TechSupport only */
     public HttpResponse completeOrder(HttpRequest request) {
         domain.user.TechSupport tech = (domain.user.TechSupport) RequestContext.current();
-        int id = Integer.parseInt(request.pathSegment(2).orElse("0"));
+        int id;
+        try { id = Integer.parseInt(request.pathSegment(2).orElse("")); }
+        catch (NumberFormatException e) { return HttpResponse.badRequest("Invalid order id."); }
         Result result = ctx.completeOrder.execute(tech, id);
         return resultToResponse(result);
     }
