@@ -11,7 +11,7 @@ const STATUS_BADGE = {
   LOW: "badge-gray", MEDIUM: "badge-yellow", HIGH: "badge-red",
   MAJOR: "badge-blue", MINOR: "badge-purple", FREE: "badge-gray",
   BACHELOR: "badge-blue", MASTER: "badge-yellow", DOCTORATE: "badge-red",
-  A: "badge-green", B: "badge-green", C: "badge-yellow", D: "badge-yellow", F: "badge-red",
+  A: "badge-green", B: "badge-green", C: "badge-yellow", D: "badge-yellow", F: "badge-red", FX: "badge-yellow",
 };
 
 export function Badge({ label, tone }) {

@@ -6,20 +6,21 @@ import * as api from "../api/index.js";
 
 const NAV = [
   { label: "Dashboard",  icon: "🏠", to: "/",             roles: null, key: "app.title" },
-  { section: "Academics" },
+  { section: "ui.nav_academics" },
   { label: "Courses",    icon: "📚", to: "/courses",      roles: null, key: "student.menu.view_courses" },
   { label: "Transcript", icon: "📄", to: "/transcript",   roles: ["Student","GraduateStudent"], key: "student.menu.transcript" },
-  { label: "Gradebook",  icon: "✏️",  to: "/gradebook",   roles: ["Teacher","Dean"], key: "teacher.menu.put_marks" },
-  { section: "Library" },
+  { label: "Schedule",   icon: "📅", to: "/schedule",     roles: ["Student","GraduateStudent","Teacher"], key: "student.menu.schedule" },
+  { label: "Gradebook",  icon: "✏️",  to: "/gradebook",   roles: ["Teacher"], key: "teacher.menu.put_marks" },
+  { section: "ui.nav_library" },
   { label: "Library",    icon: "📖", to: "/library",      roles: null, key: "student.menu.borrow" },
-  { section: "Research" },
-  { label: "Research",   icon: "🔬", to: "/research",     roles: null, key: "researcher.menu.cabinet" },
-  { section: "Communication" },
+  { section: "ui.nav_research" },
+  { label: "Research",   icon: "🔬", to: "/research",     roles: null, key: "student.menu.research" },
+  { section: "ui.nav_communication" },
   { label: "Messages",   icon: "✉️",  to: "/messages",    roles: null, key: "student.menu.inbox" },
   { label: "News",       icon: "📰", to: "/news",         roles: null, key: "student.menu.news" },
   { label: "Requests",   icon: "🙋", to: "/requests",     roles: null, key: "manager.menu.requests" },
   { label: "IT Orders",  icon: "🖥️",  to: "/orders",      roles: null, key: "tech.menu.new_orders" },
-  { section: "Admin" },
+  { section: "ui.nav_admin" },
   { label: "Users",      icon: "👥", to: "/admin/users",  roles: ["Admin"], key: "admin.menu.users" },
   { label: "Audit Logs", icon: "📋", to: "/admin/logs",   roles: ["Admin"], key: "admin.menu.logs" },
   { label: "Report",     icon: "📊", to: "/admin/report", roles: ["Admin"], key: "manager.menu.report" },
@@ -30,6 +31,7 @@ export function Sidebar() {
   const { language, changeLanguage, t } = useI18n();
   const navigate = useNavigate();
   const [badges, setBadges] = useState({});
+  const [notifCount, setNotifCount] = useState(0);
 
   useEffect(() => {
     if (!auth) return;
@@ -37,13 +39,22 @@ export function Sidebar() {
       api.inbox().then(rows =>
         ({ "/messages": rows.filter(m => m.status === "UNREAD").length })
       ).catch(() => ({})),
-      api.listRequests().then(rows =>
-        ({ "/requests": rows.filter(r => r.status === "PENDING").length })
-      ).catch(() => ({})),
+      api.listRequests().then(rows => {
+        const canProcess = ["Manager","Dean"].includes(auth?.role);
+        const pending = rows.filter(r =>
+          r.status === "PENDING" && (canProcess || r.requester === auth?.username)
+        );
+        return { "/requests": pending.length };
+      }).catch(() => ({})),
     ];
     Promise.all(tasks).then(parts =>
       setBadges(parts.reduce((acc, p) => ({ ...acc, ...p }), {}))
     );
+    const refreshNotifs = () =>
+      api.listNotifications().then(n => setNotifCount(Array.isArray(n) ? n.length : 0)).catch(() => {});
+    refreshNotifs();
+    window.addEventListener("notifications-cleared", refreshNotifs);
+    return () => window.removeEventListener("notifications-cleared", refreshNotifs);
   }, [auth]);
 
   async function handleLogout() {
@@ -58,7 +69,7 @@ export function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar-brand">
         <div className="brand-name">University System</div>
-        <div className="brand-sub">Management Portal</div>
+        <div className="brand-sub">{t("ui.brand_sub")}</div>
       </div>
 
       {auth && (
@@ -73,9 +84,9 @@ export function Sidebar() {
         </div>
       )}
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Main navigation">
         {NAV.map((item, i) => {
-          if (item.section) return <div key={i} className="sidebar-section">{item.section}</div>;
+          if (item.section) return <div key={i} className="sidebar-section">{t(item.section)}</div>;
           if (item.roles && !item.roles.includes(role)) return null;
           
           let displayLabel = item.label;
@@ -98,19 +109,35 @@ export function Sidebar() {
               end={item.to === "/"}
               className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
             >
-              <span className="nav-icon">{item.icon}</span>
-              <span style={{ flex: 1 }}>{displayLabel}</span>
-              {badgeCount > 0 && <span className="nav-badge">{badgeCount}</span>}
+              {({ isActive }) => (
+                <>
+                  <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                  <span style={{ flex: 1 }} aria-current={isActive ? "page" : undefined}>{displayLabel}</span>
+                  {badgeCount > 0 && <span className="nav-badge" aria-label={`${badgeCount} unread`}>{badgeCount}</span>}
+                </>
+              )}
             </NavLink>
           );
         })}
       </nav>
 
       <div className="sidebar-footer">
-        <select 
-          className="language-selector" 
-          value={language} 
+        {notifCount > 0 && (
+          <NavLink to="/notifications" className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}>
+            <span className="nav-icon">🔔</span>
+            <span style={{ flex: 1 }}>{t("ui.notifications")}</span>
+            <span className="nav-badge">{notifCount}</span>
+          </NavLink>
+        )}
+        <label htmlFor="lang-select" style={{ position:"absolute", width:1, height:1, overflow:"hidden", opacity:0 }}>
+          Language
+        </label>
+        <select
+          id="lang-select"
+          className="language-selector"
+          value={language}
           onChange={(e) => changeLanguage(e.target.value)}
+          aria-label="Select language"
         >
           <option value="en">English (EN)</option>
           <option value="ru">Русский (RU)</option>
@@ -118,7 +145,7 @@ export function Sidebar() {
         </select>
 
         <button className="nav-link" style={{color:"var(--danger)", marginTop:"8px"}} onClick={handleLogout}>
-          <span className="nav-icon">🚪</span> Logout
+          <span className="nav-icon">🚪</span> {t("common.logout")}
         </button>
       </div>
     </aside>
