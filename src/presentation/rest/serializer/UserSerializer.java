@@ -14,6 +14,7 @@ public final class UserSerializer {
                 .put("username",   user.username().value())
                 .put("firstName",  user.name().first())
                 .put("lastName",   user.name().last())
+                .put("fullName",   user.name().first() + " " + user.name().last())
                 .put("email",      user.email().address())
                 .put("faculty",    user.faculty().name())
                 .put("gender",     user.gender().name())

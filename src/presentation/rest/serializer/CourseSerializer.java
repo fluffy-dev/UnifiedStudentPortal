@@ -2,6 +2,7 @@ package presentation.rest.serializer;
 
 import domain.course.Course;
 import domain.course.Grade;
+import domain.course.Lesson;
 import domain.shared.Username;
 import infrastructure.persistence.json.JsonObjectBuilder;
 import infrastructure.persistence.json.JsonValue;
@@ -24,6 +25,10 @@ public final class CourseSerializer {
         for (Username u : course.students()) {
             students.add(JsonValue.of(u.value()));
         }
+        List<JsonValue> lessons = new ArrayList<>();
+        for (Lesson l : course.lessons()) {
+            lessons.add(lessonToJson(l));
+        }
         return JsonObjectBuilder.create()
                 .put("id",             course.id().value())
                 .put("name",           course.name())
@@ -34,6 +39,16 @@ public final class CourseSerializer {
                 .put("isFull",         course.isFull())
                 .putObjects("teachers", teachers)
                 .putObjects("students", students)
+                .putObjects("lessons",  lessons)
+                .build();
+    }
+
+    private static JsonValue lessonToJson(Lesson l) {
+        return JsonObjectBuilder.create()
+                .put("type", l.type().name())
+                .put("day",  l.slot().day().name())
+                .put("time", l.slot().time())
+                .put("room", l.room().name())
                 .build();
     }
 
@@ -48,13 +63,14 @@ public final class CourseSerializer {
                 .put("letter",           grade.letter())
                 .put("admittedToExam",   grade.isAdmittedToExam())
                 .put("passing",          grade.isPassing())
+                .put("fx",               grade.isFx())
+                .put("needsRetake",      grade.needsRetake())
                 .build();
     }
 
     public static JsonValue gradesToJson(Map<Username, Grade> grades) {
         List<JsonValue> arr = new ArrayList<>();
         grades.forEach((u, g) -> arr.add(gradeToJson(u, g)));
-        JsonValue.JsonArray array = new JsonValue.JsonArray(arr);
-        return array;
+        return new JsonValue.JsonArray(arr);
     }
 }

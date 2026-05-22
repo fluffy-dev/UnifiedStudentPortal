@@ -53,6 +53,19 @@ public final class HttpRequest {
         return (headers != null && !headers.isEmpty()) ? Optional.of(headers.get(0)) : Optional.empty();
     }
 
+    /** Returns the value of a URL query parameter, e.g. queryParam("format") for "?format=BIBTEX". */
+    public Optional<String> queryParam(String name) {
+        String query = exchange.getRequestURI().getQuery();
+        if (query == null || query.isBlank()) return Optional.empty();
+        for (String pair : query.split("&")) {
+            int eq = pair.indexOf('=');
+            if (eq > 0 && pair.substring(0, eq).equals(name)) {
+                return Optional.of(pair.substring(eq + 1));
+            }
+        }
+        return Optional.empty();
+    }
+
     public String method() { return method; }
     public String path()   { return path;   }
     public String rawBody(){ return rawBody; }
