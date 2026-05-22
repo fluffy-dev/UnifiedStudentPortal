@@ -10,7 +10,9 @@ export function Dashboard() {
   const role = auth?.role;
   const [news, setNews] = useState([]);
   const [msgs, setMsgs] = useState([]);
+  const [inboxCount, setInboxCount] = useState(0);
   const [courses, setCourses] = useState([]);
+  const [courseCount, setCourseCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,8 +20,13 @@ export function Dashboard() {
       api.listNews().catch(() => []),
       api.inbox().catch(() => []),
       api.listCourses().catch(() => []),
-    ]).then(([n, m, c]) => { setNews(n.slice?.(0,3) ?? []); setMsgs(m.slice?.(0,5) ?? []); setCourses(c.slice?.(0,4) ?? []); })
-      .finally(() => setLoading(false));
+    ]).then(([n, m, c]) => {
+      setNews(n.slice?.(0, 3) ?? []);
+      setInboxCount(m.length ?? 0);
+      setMsgs(m.slice?.(0, 5) ?? []);
+      setCourseCount(c.length ?? 0);
+      setCourses(c.slice?.(0, 4) ?? []);
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="page"><div className="spinner" /></div>;
@@ -33,11 +40,11 @@ export function Dashboard() {
 
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="stat-value">{courses.length}</div>
+          <div className="stat-value">{courseCount}</div>
           <div className="stat-label">{t("ui.courses_available")}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{msgs.length}</div>
+          <div className="stat-value">{inboxCount}</div>
           <div className="stat-label">{t("ui.inbox_messages")}</div>
         </div>
         <div className="stat-card">
@@ -46,17 +53,19 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <div className="card">
           <div className="section-title">{t("ui.latest_news_1")}</div>
           {news.length === 0 && <div className="empty"><p>{t("news.empty")}</p></div>}
           {news.map((n) => (
-            <div key={n.id} style={{ paddingBottom:12, marginBottom:12, borderBottom:"1px solid var(--border)" }}>
+            <div key={n.id} style={{ paddingBottom: 12, marginBottom: 12, borderBottom: "1px solid var(--border)" }}>
               <div className="flex-between">
-                <span className="fw-600" style={{ fontSize:13 }}>{n.title}</span>
+                <span className="fw-600" style={{ fontSize: 13 }}>{n.title}</span>
                 {n.pinned && <Badge label={t("ui.pinned")} />}
               </div>
-              <p className="text-muted text-sm mt-1">{n.body?.slice(0, 100)}…</p>
+              <p className="text-muted text-sm mt-1">
+                {(n.body?.length ?? 0) > 100 ? n.body.slice(0, 100) + "…" : (n.body || "")}
+              </p>
             </div>
           ))}
         </div>
@@ -65,9 +74,9 @@ export function Dashboard() {
           <div className="section-title">{t("ui.recent_messages")}</div>
           {msgs.length === 0 && <div className="empty"><p>{t("inbox.empty")}</p></div>}
           {msgs.map((m) => (
-            <div key={m.id} style={{ paddingBottom:10, marginBottom:10, borderBottom:"1px solid var(--border)" }}>
+            <div key={m.id} style={{ paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid var(--border)" }}>
               <div className="flex-between">
-                <span className="fw-600" style={{ fontSize:13 }}>{m.subject}</span>
+                <span className="fw-600" style={{ fontSize: 13 }}>{m.subject}</span>
                 <Badge tone={m.urgency} label={t(m.urgency)} />
               </div>
               <p className="text-muted text-sm mt-1">

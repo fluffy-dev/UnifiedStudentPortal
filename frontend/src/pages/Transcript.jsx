@@ -20,27 +20,57 @@ export function Transcript() {
         <p>{data.student} · {t(data.degree)} · {t("ui.year")} {data.year}</p>
       </div>
 
-      <div className="stat-grid" style={{ marginBottom:24 }}>
-        <div className="stat-card"><div className="stat-value">{(data.gpa ?? 0).toFixed(2)}</div><div className="stat-label">{t("ui.gpa")}</div></div>
-        <div className="stat-card"><div className="stat-value">{data.failCount}</div><div className="stat-label">{t("ui.failed_courses")}</div></div>
-        <div className="stat-card"><div className="stat-value">{data.courses?.length ?? 0}</div><div className="stat-label">{t("ui.total_courses")}</div></div>
+      <div className="stat-grid" style={{ marginBottom: 24 }}>
+        <div className="stat-card">
+          <div className="stat-value">{(data.gpa ?? 0).toFixed(2)}</div>
+          <div className="stat-label">{t("ui.gpa")}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{data.failCount}</div>
+          <div className="stat-label">{t("ui.failed_courses")}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{data.courses?.length ?? 0}</div>
+          <div className="stat-label">{t("ui.total_courses")}</div>
+        </div>
       </div>
 
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>{t("ui.course")}</th><th>{t("ui.1st_att")}</th><th>{t("ui.2nd_att")}</th><th>{t("ui.exam")}</th><th>{t("ui.total")}</th><th>{t("ui.grade")}</th></tr></thead>
+            <thead>
+              <tr>
+                <th>{t("ui.course")}</th>
+                <th>{t("ui.total")}</th>
+                <th>{t("ui.grade")}</th>
+                <th>{t("ui.passing")}</th>
+              </tr>
+            </thead>
             <tbody>
-              {data.courses?.map((c, i) => (
-                <tr key={i}>
-                  <td className="fw-600">{c.courseName}</td>
-                  <td>{c.firstHalf ?? "-"}</td>
-                  <td>{c.secondHalf ?? "-"}</td>
-                  <td>{c.exam ?? "-"}</td>
-                  <td>{c.total ?? "-"}</td>
-                  <td><Badge label={c.letter ?? "-"} /></td>
+              {data.courses?.map((c, i) => {
+                const letter = c.letter ?? "—";
+                const passing = letter !== "F" && letter !== "FX" && letter !== "—";
+                return (
+                  <tr key={i}>
+                    <td className="fw-600">{c.course}</td>
+                    <td>{c.total ?? "—"}</td>
+                    <td><Badge label={letter} /></td>
+                    <td>
+                      <Badge
+                        tone={passing ? "PASSING" : "FAILING"}
+                        label={t(passing ? "PASSING" : "FAILING")}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+              {(!data.courses || data.courses.length === 0) && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: "center", color: "var(--text-2)" }}>
+                    {t("ui.no_transcript_data")}
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

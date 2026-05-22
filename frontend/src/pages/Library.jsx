@@ -21,21 +21,21 @@ export function Library() {
 
   async function handleBorrow(title) {
     try { await api.borrowBook(title); toast(t("book.borrowed", title)); load(); }
-    catch (e) { toast(t(e?.message || "Failed"), "error"); }
+    catch (e) { toast(t(e?.message || "ui.error_generic"), "error"); }
   }
   async function handleReturn(title) {
     try { await api.returnBook(title); toast(t("book.returned", title)); load(); }
-    catch (e) { toast(t(e?.message || "Failed"), "error"); }
+    catch (e) { toast(t(e?.message || "ui.error_generic"), "error"); }
   }
   async function handleRemove(title) {
     if (!confirm(t(`Remove "{0}"?`, title))) return;
     try { await api.removeBook(title); toast(t("ui.book_removed")); load(); }
-    catch (e) { toast(t(e?.message || "Failed"), "error"); }
+    catch (e) { toast(t(e?.message || "ui.error_generic"), "error"); }
   }
   async function handleAdd(e) {
     e.preventDefault();
     try { await api.addBook(form); toast(t("ui.book_added")); setShowAdd(false); load(); }
-    catch (e) { toast(t(e?.message || "Failed"), "error"); }
+    catch (e) { toast(t(e?.message || "ui.error_generic"), "error"); }
   }
 
   const filtered = books.filter(b =>
@@ -49,7 +49,7 @@ export function Library() {
     <div className="page">
       <Toasts />
       <div className="page-header flex-between">
-        <div><h1>{t("student.menu.borrow").split("ui.a")[0] || t("ui.library")}</h1><p>{t("ui.0_books_in_collection", books.length)}</p></div>
+        <div><h1>{t("ui.library")}</h1><p>{t("ui.0_books_in_collection", books.length)}</p></div>
         {role === "Librarian" && <button className="btn btn-primary" onClick={() => setShowAdd(true)}>＋ {t("ui.add_book")}</button>}
       </div>
 
@@ -74,7 +74,7 @@ export function Library() {
                   <td>
                     <div style={{ display:"flex", gap:6 }}>
                       {!b.borrowed && <button className="btn btn-primary btn-sm" onClick={() => handleBorrow(b.title)}>{t("ui.borrow")}</button>}
-                      {b.borrowed && b.borrowedBy === auth?.username && (
+                      {b.borrowed && (b.borrowedBy === auth?.username || role === "Librarian") && (
                         <button className="btn btn-secondary btn-sm" onClick={() => handleReturn(b.title)}>{t("ui.return")}</button>
                       )}
                       {role === "Librarian" && (
