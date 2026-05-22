@@ -11,6 +11,7 @@ import domain.messaging.News;
 import domain.messaging.Order;
 import domain.messaging.Request;
 import domain.shared.Username;
+import application.usecase.messaging.PinNews;
 import domain.user.Dean;
 import domain.user.Employee;
 import domain.user.Manager;
@@ -81,6 +82,29 @@ public final class MessagingController {
         if (title.isBlank()) return HttpResponse.badRequest("'title' is required.");
         Result result = ctx.publishNews.execute(author.username(), title, content, pinned);
         return resultToResponse(result);
+    }
+
+    /** PUT /api/news/{id}/pin — Employee only; body: {"pinned": true|false}. Author or Manager/Dean. */
+    public HttpResponse pinNews(HttpRequest request) {
+        Employee actor = (Employee) RequestContext.current();
+        int id;
+        try {
+            id = Integer.parseInt(request.pathSegment(2).orElse(""));
+        } catch (NumberFormatException e) {
+            return HttpResponse.badRequest("Invalid news id.");
+        }
+        boolean pin = boolVal(request.body(), "pinned");
+        Result result = ctx.pinNews.execute(actor, id, pin);
+        return resultToResponse(result);
+    }
+
+    /** GET /api/messages/sent */
+    public HttpResponse sentMessages(HttpRequest request) {
+        User user = RequestContext.current();
+        List<Message> sent = ctx.messageRepository.sentBy(user.username());
+        List<JsonValue> arr = new ArrayList<>();
+        for (Message m : sent) arr.add(messageToJson(m));
+        return HttpResponse.ok(new JsonValue.JsonArray(arr));
     }
 
     /** POST /api/news/{id}/comment */
@@ -169,6 +193,7 @@ public final class MessagingController {
     public HttpResponse createOrder(HttpRequest request) {
         User user = RequestContext.current();
         String desc = str(request.body(), "description");
+        if (desc.isBlank()) return HttpResponse.badRequest("'description' is required.");
         Result result = ctx.createOrder.execute(user, desc);
         return resultToResponse(result);
     }

@@ -6,6 +6,7 @@ import domain.enums.PaperFormat;
 import domain.research.ResearchPaper;
 import domain.research.ResearchProject;
 import domain.shared.Username;
+import domain.user.ResearcherCapable;
 import domain.user.User;
 import infrastructure.persistence.json.JsonObjectBuilder;
 import infrastructure.persistence.json.JsonValue;
@@ -53,7 +54,7 @@ public final class ResearchController {
     /** GET /api/papers/{id}/cite?format=PLAIN_TEXT|BIBTEX */
     public HttpResponse getCitation(HttpRequest request) {
         String idStr    = request.pathSegment(2).orElse("0");
-        String formatStr = request.pathSegment(4)
+        String formatStr = request.queryParam("format")
                 .or(() -> request.header("X-Citation-Format"))
                 .orElse("PLAIN_TEXT");
         try {
@@ -92,6 +93,18 @@ public final class ResearchController {
         String journal = request.pathSegment(2).orElse("");
         Result result  = ctx.joinResearchProject.execute(user, journal);
         return resultToResponse(result);
+    }
+
+    /** GET /api/subscriptions — returns current user's subscribed journal names */
+    public HttpResponse listSubscriptions(HttpRequest request) {
+        User user = RequestContext.current();
+        List<JsonValue> journals = new ArrayList<>();
+        if (user instanceof ResearcherCapable rc && rc.isResearcher()) {
+            for (String j : rc.researcherProfile().subscribedJournals()) {
+                journals.add(JsonValue.of(j));
+            }
+        }
+        return HttpResponse.ok(new JsonValue.JsonArray(journals));
     }
 
     /** POST /api/subscriptions */
@@ -141,10 +154,11 @@ public final class ResearchController {
         List<JsonValue> participants = new ArrayList<>();
         for (Username u : p.participants()) participants.add(JsonValue.of(u.value()));
         JsonObjectBuilder b = JsonObjectBuilder.create()
-                .put("id",         p.id())
-                .put("topic",      p.topic())
-                .put("journal",    p.journal().value())
-                .put("supervisor", p.supervisor() != null ? p.supervisor().value() : "")
+                .put("id",           p.id())
+                .put("topic",        p.topic())
+                .put("journal",      p.journal().value())
+                .put("supervisor",   p.supervisor() != null ? p.supervisor().value() : "")
+                .put("papersCount",  p.publishedPapers().size())
                 .putObjects("participants", participants);
         if (p.supervisor() != null) {
             ctx.userRepository.findByUsername(p.supervisor())

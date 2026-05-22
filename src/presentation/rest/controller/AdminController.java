@@ -58,6 +58,8 @@ public final class AdminController {
         String facultyStr = str(body, "faculty");
         String degreeStr  = str(body, "degreeType");
         int studyYear     = intVal(body, "studyYear");
+        String genderStr  = str(body, "gender");
+        String dobStr     = str(body, "dateOfBirth");
 
         if (username.isBlank() || password.isBlank() || firstName.isBlank())
             return HttpResponse.badRequest("username, password, firstName are required.");
@@ -65,10 +67,16 @@ public final class AdminController {
         try {
             Faculty    faculty = Faculty.valueOf(facultyStr.toUpperCase());
             DegreeType degree  = DegreeType.valueOf(degreeStr.toUpperCase());
-
+            Gender     gender  = genderStr.isBlank() ? Gender.MALE : Gender.valueOf(genderStr.toUpperCase());
+            LocalDate  dob;
+            try {
+                dob = dobStr.isBlank() ? LocalDate.of(2000, 1, 1) : LocalDate.parse(dobStr);
+            } catch (java.time.format.DateTimeParseException e) {
+                return HttpResponse.badRequest("Invalid dateOfBirth format. Use ISO-8601 (e.g. 2000-01-15).");
+            }
             var student = ctx.createStudent.execute(
                     actor.username(), firstName, lastName, username, password,
-                    Gender.MALE, LocalDate.now(), email, faculty, degree, studyYear);
+                    gender, dob, email, faculty, degree, studyYear);
             return HttpResponse.created(UserSerializer.toJson(student));
         } catch (IllegalArgumentException e) {
             return HttpResponse.badRequest("Invalid enum value: " + e.getMessage());

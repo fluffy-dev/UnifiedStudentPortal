@@ -5,7 +5,11 @@ import application.usecase.course.ViewTranscript;
 import bootstrap.AppContext;
 import domain.course.CourseId;
 import domain.course.Grade;
+import domain.course.Room;
+import domain.course.TimeSlot;
 import domain.enums.DisciplineType;
+import domain.enums.LessonType;
+import domain.enums.WeekDay;
 import domain.shared.Username;
 import domain.user.Manager;
 import domain.user.Student;
@@ -65,6 +69,38 @@ public final class CourseController {
         }
     }
 
+    /** POST /api/courses/{id}/teachers — Manager only; body: {"teacherUsername": "..."} */
+    public HttpResponse assignTeacher(HttpRequest request) {
+        Manager  actor    = (Manager) RequestContext.current();
+        String   courseId = request.pathSegment(2).orElse("");
+        String   teacher  = str(request.body(), "teacherUsername");
+        if (teacher.isBlank()) return HttpResponse.badRequest("'teacherUsername' is required.");
+        Result result = ctx.assignTeacher.execute(actor.username(), new CourseId(courseId), new Username(teacher));
+        return resultToResponse(result);
+    }
+
+    /** POST /api/courses/{id}/lessons — Manager only; body: {"type","day","time","room"} */
+    public HttpResponse addLesson(HttpRequest request) {
+        Manager actor    = (Manager) RequestContext.current();
+        String  courseId = request.pathSegment(2).orElse("");
+        JsonValue.JsonObject body = request.body();
+        String typeStr = str(body, "type");
+        String dayStr  = str(body, "day");
+        String time    = str(body, "time");
+        String room    = str(body, "room");
+        if (typeStr.isBlank() || dayStr.isBlank() || time.isBlank() || room.isBlank())
+            return HttpResponse.badRequest("'type', 'day', 'time', and 'room' are required.");
+        try {
+            LessonType type = LessonType.valueOf(typeStr.toUpperCase());
+            WeekDay    day  = WeekDay.valueOf(dayStr.toUpperCase());
+            Result result = ctx.addLesson.execute(actor.username(), new CourseId(courseId),
+                    type, new TimeSlot(day, time), new Room(room));
+            return resultToResponse(result);
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest("Invalid type or day: " + e.getMessage());
+        }
+    }
+
     /** POST /api/courses/{id}/enroll — Student only */
     public HttpResponse enroll(HttpRequest request) {
         Student student  = (Student) RequestContext.current();
@@ -92,7 +128,12 @@ public final class CourseController {
         int secondHalf = intVal(body, "secondHalf");
         int exam       = intVal(body, "exam");
 
-        Grade grade  = new Grade(firstHalf, secondHalf, exam);
+        Grade grade;
+        try {
+            grade = new Grade(firstHalf, secondHalf, exam);
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest("Invalid marks: " + e.getMessage());
+        }
         Result result = ctx.recordMarks.execute(teacher, new CourseId(courseId),
                 new Username(studentUsername), grade);
         return resultToResponse(result);
