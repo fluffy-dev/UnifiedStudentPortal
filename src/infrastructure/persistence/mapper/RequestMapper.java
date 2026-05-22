@@ -36,7 +36,9 @@ public final class RequestMapper implements EntityMapper<Request, Integer> {
     @Override public Request fromJson(JsonValue json) {
         JsonValue.JsonObject o = (JsonValue.JsonObject) json;
         String createdAtRaw = MapperHelpers.readString(o, "createdAt");
-        LocalDateTime createdAt = createdAtRaw.isBlank() ? LocalDateTime.now() : LocalDateTime.parse(createdAtRaw);
+        LocalDateTime createdAt = (createdAtRaw == null || createdAtRaw.isBlank())
+                ? LocalDateTime.now()
+                : LocalDateTime.parse(createdAtRaw);
         Request r = new Request(MapperHelpers.readInt(o, "id"),
                 new Username(MapperHelpers.readString(o, "requester")),
                 MapperHelpers.readString(o, "title"),

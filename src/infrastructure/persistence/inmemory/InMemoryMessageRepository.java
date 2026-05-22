@@ -17,4 +17,10 @@ public final class InMemoryMessageRepository implements MessageRepository {
                 .sorted()
                 .toList();
     }
+    @Override public List<Message> sentBy(Username sender) {
+        return messages.stream()
+                .filter(m -> m.sender().equals(sender))
+                .sorted()
+                .toList();
+    }
 }

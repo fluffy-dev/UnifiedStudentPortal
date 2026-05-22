@@ -22,4 +22,9 @@ public final class OrmMessageRepository implements MessageRepository {
                 .orderBy(Message::compareTo)
                 .list();
     }
+    @Override public List<Message> sentBy(Username sender) {
+        return repo.whereEq("sender", sender.value())
+                .orderBy(Message::compareTo)
+                .list();
+    }
 }

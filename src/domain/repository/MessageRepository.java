@@ -8,4 +8,5 @@ import java.util.List;
 public interface MessageRepository {
     void save(Message message);
     List<Message> inboxOf(Username recipient);
+    List<Message> sentBy(Username sender);
 }
