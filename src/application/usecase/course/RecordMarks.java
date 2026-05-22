@@ -32,9 +32,29 @@ public final class RecordMarks {
         if (!(u instanceof Student student)) return Result.fail("Student not found.");
         if (!course.hasStudent(studentUsername)) return Result.fail("Student is not enrolled in this course.");
 
+        // Determine the previous grade outcome so we can reverse side effects on re-entry
+        Grade previous = course.gradeOf(studentUsername).orElse(null);
+
         course.recordGrade(studentUsername, grade);
-        if (grade.isPassing()) student.recordCompletion(courseId);
-        else student.recordFail();
+
+        // Reverse previous side effect before applying new one
+        if (previous != null) {
+            if (previous.isPassing()) {
+                // Previously completed — remove completion if new grade no longer passes
+                if (!grade.isPassing()) student.removeCompletion(courseId);
+            } else if (!previous.isFx()) {
+                // Previously counted as a fail — undo that fail count
+                student.undoFail();
+            }
+        }
+
+        // Apply new outcome
+        if (grade.isPassing()) {
+            student.recordCompletion(courseId);
+        } else if (!grade.isFx()) {
+            // FX is a conditional fail — do not count against the student
+            student.recordFail();
+        }
 
         courses.save(course);
         users.save(student);

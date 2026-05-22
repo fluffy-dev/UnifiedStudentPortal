@@ -27,6 +27,8 @@ public final class AssignTeacher {
 
         User u = users.findByUsername(teacherUsername).orElse(null);
         if (!(u instanceof Teacher teacher)) return Result.fail("User is not a teacher.");
+        if (course.teachers().contains(teacher.username()))
+            return Result.fail("Teacher already assigned to this course.");
 
         course.assignTeacher(teacher.username());
         teacher.recordCourseAssignment(courseId);
