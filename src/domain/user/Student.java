@@ -53,7 +53,9 @@ public class Student extends User implements BookBorrowerCapable, ResearcherCapa
         availableCredits = availableCredits.plus(refund);
     }
     public void recordCompletion(CourseId courseId) { completed.add(courseId); }
+    public void removeCompletion(CourseId courseId) { completed.remove(courseId); }
     public void recordFail() { failCount++; }
+    public void undoFail() { if (failCount > 0) failCount--; }
 
     public void rehydrate(int availableCreditsValue, int failCountValue,
                           Iterable<CourseId> enrolledIds, Iterable<CourseId> completedIds) {

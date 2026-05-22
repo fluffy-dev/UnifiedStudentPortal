@@ -21,11 +21,15 @@ public final class News implements Comparable<News> {
     }
 
     public News(int id, String title, String body, Username author, boolean pinned) {
+        this(id, title, body, author, pinned, LocalDateTime.now());
+    }
+
+    public News(int id, String title, String body, Username author, boolean pinned, LocalDateTime publishedAt) {
         this.id = id;
         this.title = title;
         this.body = body;
         this.author = author;
-        this.publishedAt = LocalDateTime.now();
+        this.publishedAt = publishedAt != null ? publishedAt : LocalDateTime.now();
         this.pinned = pinned;
     }
 

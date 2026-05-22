@@ -17,13 +17,18 @@ public final class Message implements Comparable<Message> {
     private MessageStatus status;
 
     public Message(int id, Username sender, Username recipient, String subject, String body, UrgencyLevel urgency) {
+        this(id, sender, recipient, subject, body, urgency, LocalDateTime.now());
+    }
+
+    public Message(int id, Username sender, Username recipient, String subject, String body,
+                   UrgencyLevel urgency, LocalDateTime sentAt) {
         this.id = id;
         this.sender = sender;
         this.recipient = recipient;
         this.subject = subject;
         this.body = body;
         this.urgency = urgency;
-        this.sentAt = LocalDateTime.now();
+        this.sentAt = sentAt != null ? sentAt : LocalDateTime.now();
         this.status = MessageStatus.UNREAD;
     }
 

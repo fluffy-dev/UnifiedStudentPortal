@@ -11,6 +11,7 @@ import domain.research.ResearchPaper;
 import domain.research.ResearchProject;
 import domain.user.ResearcherCapable;
 import domain.user.User;
+import domain.shared.IdSequence;
 
 public final class PaperPublisher {
     private final ResearchPaperRepository papers;
@@ -18,15 +19,17 @@ public final class PaperPublisher {
     private final NotificationRepository notifications;
     private final NewsRepository news;
     private final UserRepository users;
-    private final java.util.concurrent.atomic.AtomicInteger newsId = new java.util.concurrent.atomic.AtomicInteger(1);
+    private final IdSequence newsIds;
 
     public PaperPublisher(ResearchPaperRepository papers, ResearchProjectRepository projects,
-                          NotificationRepository notifications, NewsRepository news, UserRepository users) {
-        this.papers = papers;
-        this.projects = projects;
+                          NotificationRepository notifications, NewsRepository news,
+                          UserRepository users, IdSequence newsIds) {
+        this.papers        = papers;
+        this.projects      = projects;
         this.notifications = notifications;
-        this.news = news;
-        this.users = users;
+        this.news          = news;
+        this.users         = users;
+        this.newsIds       = newsIds;
     }
 
     public void publish(ResearchPaper paper) {
@@ -50,9 +53,11 @@ public final class PaperPublisher {
     }
 
     private void announce(ResearchPaper paper) {
-        News announcement = new News(newsId.getAndIncrement(),
+        News announcement = new News(
+                newsIds.next(),
                 "Research: New paper published in " + paper.journal(),
-                "\"" + paper.title() + "\" by " + paper.author() + " has been published in " + paper.journal() + ".",
+                "\"" + paper.title() + "\" by " + paper.author()
+                        + " has been published in " + paper.journal() + ".",
                 paper.author(),
                 true);
         news.save(announcement);
