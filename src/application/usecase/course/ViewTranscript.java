@@ -51,11 +51,15 @@ public final class ViewTranscript {
             }
         }
 
-        // Sort: graded courses first (by total desc), then ungraded alphabetically
+        // Sort: graded courses first by total descending; ungraded rows last, alphabetically.
+        // The ungraded sentinel is firstHalf == -1 (never a valid Grade component value).
         lines.sort((a, b) -> {
-            if (a.total() == 0 && a.firstHalf() == -1 && b.firstHalf() != -1) return 1;
-            if (b.total() == 0 && b.firstHalf() == -1 && a.firstHalf() != -1) return -1;
-            return Integer.compare(b.total(), a.total());
+            boolean aUngraded = a.firstHalf() == -1;
+            boolean bUngraded = b.firstHalf() == -1;
+            if (aUngraded && !bUngraded) return 1;          // a goes after b
+            if (!aUngraded && bUngraded) return -1;          // a goes before b
+            if (aUngraded)               return a.courseName().compareToIgnoreCase(b.courseName());
+            return Integer.compare(b.total(), a.total());    // both graded: desc total
         });
 
         return new Transcript(student.name().full(), student.degreeType().name(),
