@@ -22,6 +22,7 @@ public final class DataSeeder {
         seedUsers();
         seedCourses();
         seedGrades();
+        syncStudentState(); // must run after grades so completedCourses/failCount are correct
         seedBooks();
         seedMessages();
         seedNews();
@@ -349,6 +350,49 @@ public final class DataSeeder {
                 }
             }
             ctx.courseRepository.save(c);
+        }
+    }
+
+    // ── STUDENT STATE SYNC ───────────────────────────────────────────────────
+
+    /**
+     * After seedCourses() and seedGrades(), derive each student's enrolled set,
+     * completedCourses, failCount, and availableCredits from the actual course data,
+     * then rehydrate the student object so all domain rules work correctly.
+     *
+     * The seeder calls course.enroll() and course.recordGrade() directly (bypassing
+     * use cases) which leaves student.enrolledCourses(), completedCourses(), and
+     * failCount in their default empty/zero state. Without this sync:
+     * - AlreadyEnrolledRule and ScheduleConflictRule are blind to seeded enrollments
+     * - PrerequisiteRule denies students who legitimately passed a prerequisite
+     * - DropCourse blocks students from dropping seeded courses
+     * - GPA and transcript failCount are wrong
+     */
+    private void syncStudentState() {
+        for (User user : ctx.userRepository.findAll()) {
+            if (!(user instanceof Student s)) continue;
+
+            java.util.List<domain.course.CourseId> enrolled   = new java.util.ArrayList<>();
+            java.util.List<domain.course.CourseId> completed  = new java.util.ArrayList<>();
+            int failCount    = 0;
+            int creditsUsed  = 0;
+
+            for (domain.course.Course c : ctx.courseRepository.findAll()) {
+                if (!c.hasStudent(s.username())) continue;
+                enrolled.add(c.id());
+                creditsUsed += c.credits().value();
+
+                domain.course.Grade g = c.gradeOf(s.username()).orElse(null);
+                if (g != null) {
+                    if (g.isPassing())      completed.add(c.id());
+                    else if (!g.isFx())     failCount++;
+                    // FX: provisional — not counted as completion or fail
+                }
+            }
+
+            int available = Math.max(0, Credits.SEMESTER_LIMIT.value() - creditsUsed);
+            s.rehydrate(available, failCount, enrolled, completed);
+            ctx.userRepository.save(s);
         }
     }
 
