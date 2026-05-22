@@ -1,38 +1,23 @@
 [project]
-site_name = "Zenith Studio"
-site_description = "The most satisfying documentation experience on the web."
-site_author = "Your Name"
-site_url = "https://yourdomain.com/"
-copyright = "Copyright © 2026 • Built with Zensical"
-
-# Seamless GitHub Integration
-repo_url = "https://github.com/username/repo"
-repo_name = "GitHub"
-edit_uri = "edit/main/docs/"
+site_name = "University Management System"
+site_description = "A full-stack university lifecycle system built in Java 17+ with Clean Architecture"
+site_author = "Rauan Assetov"
+docs_dir = "docs"
 
 [project.theme]
-# Set a distinct header icon using Zensical's built-in Lucide pack
-logo = "lucide/sparkles"
-
-# ─── HIGH-END USER EXPERIENCE FEATURES ────────────────────────────
-# These turn your static site into a super-smooth Single Page Application (SPA).
+logo = "lucide/graduation-cap"
 features = [
-    "navigation.tabs",             # Shifts top-level sections into a sleek header menu
-    "navigation.tabs.sticky",      # Keeps tabs locked at the top when scrolling
-    "navigation.sections",         # Groups nested sidebar items into elegant collapsing menus
-    "navigation.top",              # Adds a floating, smooth "Back to Top" rocket button
-    "navigation.tracking",         # Dynamically updates your browser URL as you scroll
-    "navigation.instant",          # Fetches pages instantly without full browser reloads
-    "navigation.instant.progress", # Adds a subtle, premium loading line at the top edge
-    "navigation.path",             # Injects automatic breadcrumbs right above page titles
-    "content.code.annotate",       # Enables elegant tap-to-expand explanations inside code lines
-    "content.code.select",         # Implements a one-click clipboard copy button on code blocks
-    "content.footnote.tooltips",   # Displays footnotes as hover tooltips instead of jumping pages
-    "content.tooltips"             # Adds smooth, stylized modern link tooltips
+    "navigation.tabs",
+    "navigation.tabs.sticky",
+    "navigation.sections",
+    "navigation.top",
+    "navigation.instant",
+    "navigation.instant.progress",
+    "navigation.path",
+    "content.code.annotate",
+    "content.code.select",
+    "content.tooltips"
 ]
-
-# ─── AUTOMATIC DAY / NIGHT PALETTES ──────────────────────────────
-# Gives your users a gorgeously contrasting light mode and deep slate dark mode.
 
 [[project.theme.palette]]
 media = "(prefers-color-scheme: light)"
