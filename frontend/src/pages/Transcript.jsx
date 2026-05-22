@@ -50,8 +50,8 @@ export function Transcript() {
       {/* Stats */}
       <div className="stat-grid" style={{ marginBottom: 24 }}>
         <div className="stat-card">
-          <div className="stat-value">{(data.gpa ?? 0).toFixed(2)}</div>
-          <GpaBar gpa={data.gpa ?? 0} />
+          <div className="stat-value">{data.gpa != null ? data.gpa.toFixed(2) : "N/A"}</div>
+          {data.gpa != null && <GpaBar gpa={data.gpa} />}
           <div className="stat-label">{t("ui.gpa")}</div>
         </div>
         <div className="stat-card">
@@ -116,7 +116,7 @@ export function Transcript() {
                       <td style={{ textAlign: "center" }}><Badge label={c.letter} /></td>
                       <td style={{ textAlign: "center" }}>
                         <Badge
-                          tone={c.passing ? "PASSING" : (c.letter === "FX" ? "FAILING" : "FAILING")}
+                          tone={c.passing ? "PASSING" : (c.letter === "FX" ? "FX" : "FAILING")}
                           label={c.passing ? t("PASSING") : (c.letter === "FX" ? t("ui.retake_exam") : t("FAILING"))}
                         />
                       </td>
@@ -169,7 +169,7 @@ export function Transcript() {
         background: "var(--bg-3)", border: "1px solid var(--border)",
         display: "flex", gap: 20, flexWrap: "wrap", fontSize: 12, color: "var(--text-2)"
       }}>
-        <span style={{ fontWeight: 600, color: "var(--text)" }}>GPA scale (4.0):</span>
+        <span style={{ fontWeight: 600, color: "var(--text)" }}>{t("ui.gpa_scale_legend")}</span>
         {[["A","4.0","#10b981"],["B","3.0","#6366f1"],["C","2.0","#f59e0b"],["D","1.0","#f59e0b"],["FX/F","0.0","#ef4444"]].map(([l,p,c]) => (
           <span key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ background: c, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 11, fontWeight: 700 }}>{l}</span>
