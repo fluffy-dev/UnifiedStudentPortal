@@ -40,6 +40,7 @@ public final class TestRunner {
         JsonPersistenceTest.runAll();
         QueryBuilderTest.runAll();
         NewUseCasesTest.runAll();
+        CoverageGapTest.runAll();
 
         System.out.println("\n=========================================");
         System.out.println("Tests run:    " + testsRun);
