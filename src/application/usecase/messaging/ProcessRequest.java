@@ -27,6 +27,7 @@ public final class ProcessRequest {
     public Result execute(Username actor, int requestId, RequestStatus newStatus) {
         Request r = requests.findById(requestId).orElse(null);
         if (r == null) return Result.fail("Request not found.");
+        if (actor.equals(r.requester())) return Result.fail("Cannot process your own request.");
         r.changeStatus(newStatus);
         requests.save(r);
         Message reply = new Message(msgIds.next(), actor, r.requester(),
