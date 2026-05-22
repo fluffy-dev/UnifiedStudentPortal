@@ -61,7 +61,7 @@ On publish:
 - Paper is saved to the repository
 - If a ResearchProject exists for this journal, the paper is recorded on the project
 - All users subscribed to that journal receive a notification
-- A pinned news announcement is auto-published: *"Research: New paper published in [journal]"*
+- A pinned news announcement is auto-published: *"Research: New paper published in `[journal]`"*
 
 **Generate a citation**
 Click **Cite** on any paper. Opens a modal with BibTeX format:

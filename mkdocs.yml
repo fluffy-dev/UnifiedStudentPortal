@@ -5,7 +5,6 @@ site_author: Rauan
 exclude_docs: |
   PROJECT_ANALYSIS.md
   OOP_Final_Project_Review.md
-  superpowers/
 
 theme:
   name: material
