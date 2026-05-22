@@ -13,6 +13,7 @@ export function Research() {
   const [tab, setTab] = useState("papers");
   const [papers, setPapers] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [subscriptions, setSubscriptions] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [becoming, setBecoming] = useState(false);
   const [field, setField] = useState("");
@@ -29,7 +30,12 @@ export function Research() {
     Promise.all([
       api.listPapers().catch(() => []),
       api.listProjects().catch(() => []),
-    ]).then(([p, pr]) => { setPapers(p); setProjects(pr); }).finally(() => setLoading(false));
+      api.listSubscriptions().catch(() => []),
+    ]).then(([p, pr, subs]) => {
+      setPapers(p);
+      setProjects(pr);
+      setSubscriptions(new Set(Array.isArray(subs) ? subs : []));
+    }).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [auth?.isResearcher]);
@@ -42,7 +48,7 @@ export function Research() {
       toast(t("ui.researcher_status_unlocked"), "success");
       updateResearcherStatus(true);
     } catch (err) {
-      toast(t(err?.message || "Failed to become researcher"), "error");
+      toast(t(err?.message || "ui.error_generic"), "error");
     } finally {
       setBecoming(false);
     }
@@ -51,7 +57,7 @@ export function Research() {
   async function handlePublish(e) {
     e.preventDefault();
     try { await api.publishPaper(pForm); toast(t("ui.paper_published"), "success"); setShowPaper(false); load(); }
-    catch (err) { toast(t(err?.message || "Failed"), "error"); }
+    catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
   }
   async function handleCreateProject(e) {
     e.preventDefault();
@@ -61,19 +67,30 @@ export function Research() {
       setShowProject(false);
       setPrForm({ journal: "", topic: "" });
       load();
-    } catch (err) { toast(t(err?.message || "Failed"), "error"); }
+    } catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
   }
   async function handleCite(id) {
     try { const data = await api.getCitation(id, "BIBTEX"); setCitation(data.citation); }
-    catch (err) { toast(t(err?.message || "Failed"), "error"); }
+    catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
   }
   async function handleJoin(journal) {
     try { await api.joinProject(journal); toast(t("ui.joined_project"), "success"); load(); }
-    catch (err) { toast(t(err?.message || "Failed"), "error"); }
+    catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
   }
-  async function handleSubscribe(journal) {
-    try { await api.subscribe(journal); toast(t("ui.subscribed"), "success"); }
-    catch (err) { toast(t(err?.message || "Failed"), "error"); }
+  async function handleSubscribeToggle(journal) {
+    if (subscriptions.has(journal)) {
+      try {
+        await api.unsubscribe(journal);
+        toast(t("subscription.unsubscribed", journal), "success");
+        load();
+      } catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
+    } else {
+      try {
+        await api.subscribe(journal);
+        toast(t("ui.subscribed"), "success");
+        load();
+      } catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
+    }
   }
 
   if (!auth?.isResearcher) {
@@ -103,8 +120,6 @@ export function Research() {
 
   if (loading) return <div className="page"><div className="spinner" /></div>;
 
-  const projectJournals = new Set(projects.map(p => p.journal));
-
   return (
     <div className="page">
       <Toasts />
@@ -130,7 +145,7 @@ export function Research() {
       {tab === "papers" && (
         <div className="card-grid">
           {papers.map(p => {
-            const hasProject = projectJournals.has(p.journal);
+            const isSubscribed = subscriptions.has(p.journal);
             return (
               <div key={p.id} className="card card-sm" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div className="fw-600" style={{ fontSize: 15 }}>{p.title}</div>
@@ -148,11 +163,13 @@ export function Research() {
                   <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => handleCite(p.id)}>
                     {t("ui.cite")}
                   </button>
-                  {hasProject && (
-                    <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => handleSubscribe(p.journal)}>
-                      ★ {t("ui.subscribe")}
-                    </button>
-                  )}
+                  <button
+                    className={`btn btn-sm ${isSubscribed ? "btn-primary" : "btn-secondary"}`}
+                    style={{ flex: 1 }}
+                    onClick={() => handleSubscribeToggle(p.journal)}
+                  >
+                    {isSubscribed ? `✓ ${t("ui.subscribed_label")}` : `★ ${t("ui.subscribe")}`}
+                  </button>
                 </div>
               </div>
             );
@@ -165,27 +182,42 @@ export function Research() {
 
       {tab === "projects" && (
         <div className="card-grid">
-          {projects.map(p => (
-            <div key={p.id} className="card card-sm" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div className="fw-600" style={{ fontSize: 15 }}>{p.journal}</div>
-              <div className="text-muted text-sm">{p.topic || t("ui.research")}</div>
-              <div className="text-muted text-sm">
-                {t("ui.by")} <strong>{p.supervisorFullName || p.supervisor}</strong>
+          {projects.map(p => {
+            const isJoined = Array.isArray(p.participants) && p.participants.includes(auth?.username);
+            const isSubscribed = subscriptions.has(p.journal);
+            return (
+              <div key={p.id} className="card card-sm" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="fw-600" style={{ fontSize: 15 }}>{p.journal}</div>
+                <div className="text-muted text-sm">{p.topic || t("ui.research")}</div>
+                <div className="text-muted text-sm">
+                  {t("ui.by")} <strong>{p.supervisorFullName || p.supervisor}</strong>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <span className="badge badge-blue">{p.participants?.length ?? 0} {t("ui.members")}</span>
+                  <span className="badge badge-purple">{p.papersCount ?? 0} {t("ui.papers_1")}</span>
+                  {isJoined && <span className="badge badge-green">✓ {t("ui.joined")}</span>}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                  {isJoined ? (
+                    <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} disabled>
+                      ✓ {t("ui.joined")}
+                    </button>
+                  ) : (
+                    <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleJoin(p.journal)}>
+                      {t("ui.join_project")}
+                    </button>
+                  )}
+                  <button
+                    className={`btn btn-sm ${isSubscribed ? "btn-primary" : "btn-secondary"}`}
+                    style={{ flex: 1 }}
+                    onClick={() => handleSubscribeToggle(p.journal)}
+                  >
+                    {isSubscribed ? `✓ ${t("ui.subscribed_label")}` : `★ ${t("ui.subscribe")}`}
+                  </button>
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                <span className="badge badge-blue">{p.participants?.length ?? 0} {t("ui.members")}</span>
-                <span className="badge badge-purple">{p.publishedPapers?.length ?? p.publications?.length ?? 0} {t("ui.papers_1")}</span>
-              </div>
-              <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-                <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleJoin(p.journal)}>
-                  {t("ui.join_project")}
-                </button>
-                <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => handleSubscribe(p.journal)}>
-                  ★ {t("ui.subscribe")}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {projects.length === 0 && (
             <div className="empty"><div className="empty-icon">🔬</div><p>{t("ui.no_active_projects")}</p></div>
           )}

@@ -23,12 +23,12 @@ export function AdminUsers() {
   async function handleCreate(e) {
     e.preventDefault();
     try { await api.createStudent(form); toast(t("ui.student_created")); setShowCreate(false); load(); }
-    catch (e) { toast(t(e?.message || "Failed"), "error"); }
+    catch (e) { toast(t(e?.message || "ui.error_generic"), "error"); }
   }
   async function handleDelete(username) {
     if (!confirm(t(`Delete user "{0}"?`, username))) return;
     try { await api.deleteUser(username); toast(t("ui.user_deleted")); load(); }
-    catch (e) { toast(t(e?.message || "Failed"), "error"); }
+    catch (e) { toast(t(e?.message || "ui.error_generic"), "error"); }
   }
 
   const filtered = users.filter(u =>
@@ -54,10 +54,13 @@ export function AdminUsers() {
           <table>
             <thead><tr><th>{t("ui.username")}</th><th>{t("ui.full_name")}</th><th>{t("ui.email")}</th><th>{t("ui.faculty")}</th><th>{t("ui.role")}</th><th></th></tr></thead>
             <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan="6" style={{ textAlign:"center", color:"var(--text-2)" }}>{t("ui.no_users_found")}</td></tr>
+              )}
               {filtered.map(u => (
                 <tr key={u.username}>
                   <td className="fw-600">{u.username}</td>
-                  <td>{u.fullName}</td>
+                  <td>{u.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim()}</td>
                   <td className="text-muted text-sm">{u.email}</td>
                   <td className="text-muted text-sm">{u.faculty}</td>
                   <td><Badge label={t(u.role)} /></td>
@@ -126,17 +129,16 @@ export function AdminLogs() {
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>{t("ui.time")}</th><th>{t("ui.actor")}</th><th>{t("ui.action")}</th><th>{t("ui.details")}</th></tr></thead>
+            <thead><tr><th>{t("ui.time")}</th><th>{t("ui.actor")}</th><th>{t("ui.action")}</th></tr></thead>
             <tbody>
               {logs.map((l, i) => (
                 <tr key={i}>
-                  <td className="text-muted text-sm" style={{ whiteSpace:"nowrap" }}>{l.timestamp?.slice(0,19).replace("T"," ")}</td>
+                  <td className="text-muted text-sm" style={{ whiteSpace:"nowrap" }}>{l.at?.slice(0,19).replace("T"," ")}</td>
                   <td className="fw-600">{l.actor}</td>
-                  <td><span className="badge badge-blue">{t(l.action)}</span></td>
-                  <td className="text-muted text-sm">{t(l.details)}</td>
+                  <td className="text-muted text-sm">{l.action}</td>
                 </tr>
               ))}
-              {logs.length === 0 && <tr><td colSpan="4" style={{ textAlign:"center", color:"var(--text-2)" }}>{t("ui.no_logs")}</td></tr>}
+              {logs.length === 0 && <tr><td colSpan="3" style={{ textAlign:"center", color:"var(--text-2)" }}>{t("ui.no_logs")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -162,14 +164,44 @@ export function AdminReport() {
         <div className="stat-card"><div className="stat-value">{report.failingStudents}</div><div className="stat-label">{t("ui.at_risk_students")}</div></div>
       </div>
       {report.topStudents?.length > 0 && (
-        <div className="card">
+        <div className="card" style={{ marginBottom: 16 }}>
           <div className="section-title">{t("ui.top_students_by_gpa")}</div>
           <div className="table-wrap">
             <table>
               <thead><tr><th>{t("ui.student")}</th><th>{t("ui.gpa")}</th></tr></thead>
               <tbody>
                 {report.topStudents.map((s, i) => (
-                  <tr key={i}><td className="fw-600">{s.username}</td><td>{s.gpa?.toFixed(2)}</td></tr>
+                  <tr key={i}>
+                    <td className="fw-600">{s.fullName || s.username}</td>
+                    <td>{s.gpa?.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {report.courseRows?.length > 0 && (
+        <div className="card">
+          <div className="section-title">{t("ui.course_performance")}</div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t("ui.course")}</th>
+                  <th>{t("ui.enrolled_capacity")}</th>
+                  <th>{t("ui.avg_score")}</th>
+                  <th>{t("ui.passing_count")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.courseRows.map((c, i) => (
+                  <tr key={i}>
+                    <td className="fw-600">{c.course}</td>
+                    <td>{c.enrolled}/{c.capacity}</td>
+                    <td>{(c.avgScore ?? 0).toFixed(1)}</td>
+                    <td>{c.passing}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>

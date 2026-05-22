@@ -5,23 +5,30 @@ import { Modal } from "../components/Modal.jsx";
 import { useToast } from "../components/Toast.jsx";
 import * as api from "../api/index.js";
 
+const FEED_PREVIEW_CHARS = 200;
+
+const CAN_PIN_ROLES = ["Manager", "Dean"];
+
 export function News() {
   const { auth } = useAuth();
   const { t } = useI18n();
   const { toast, Toasts } = useToast();
   const role = auth?.role;
   const isEmployee = !["Student", "GraduateStudent", "Admin"].includes(role);
+  const canPinAny = CAN_PIN_ROLES.includes(role);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCompose, setShowCompose] = useState(false);
   const [commenting, setCommenting] = useState(null);
   const [comment, setComment] = useState("");
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState(() => new Set());
+  const [viewing, setViewing] = useState(null);
   const [form, setForm] = useState({ title: "", body: "", pinned: false });
 
   const load = () => api.listNews().then(setNews).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
+
+  const viewingItem = useMemo(() => news.find(n => n.id === viewing) ?? null, [news, viewing]);
 
   async function handlePublish(e) {
     e.preventDefault();
@@ -32,7 +39,17 @@ export function News() {
       setForm({ title: "", body: "", pinned: false });
       load();
     } catch (err) {
-      toast(t(err?.message || "Failed"), "error");
+      toast(t(err?.message || "ui.error_generic"), "error");
+    }
+  }
+
+  async function handlePin(id, pin) {
+    try {
+      await api.pinNews(id, pin);
+      toast(pin ? t("ui.pinned_1") : t("ui.unpin"));
+      load();
+    } catch (err) {
+      toast(t(err?.message || "ui.error_generic"), "error");
     }
   }
 
@@ -45,17 +62,13 @@ export function News() {
       setComment("");
       load();
     } catch (err) {
-      toast(t(err?.message || "Failed"), "error");
+      toast(t(err?.message || "ui.error_generic"), "error");
     }
   }
 
-  function toggle(id) {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  function openComment(id) {
+    setCommenting(id);
+    setComment("");
   }
 
   const filtered = useMemo(() => {
@@ -98,21 +111,32 @@ export function News() {
         <>
           <div className="section-title">📌 {t("ui.pinned_1")}</div>
           {pinned.map(n => (
-            <NewsCard key={n.id} n={n} open={expanded.has(n.id)}
-                      onToggle={() => toggle(n.id)}
-                      onComment={() => { setCommenting(n.id); setComment(""); }} />
+            <NewsCard key={n.id} n={n} t={t}
+              onView={() => setViewing(n.id)}
+              onComment={() => openComment(n.id)} />
           ))}
         </>
       )}
 
       <div className="section-title mt-3">{t("ui.latest")}</div>
       {regular.map(n => (
-        <NewsCard key={n.id} n={n} open={expanded.has(n.id)}
-                  onToggle={() => toggle(n.id)}
-                  onComment={() => { setCommenting(n.id); setComment(""); }} />
+        <NewsCard key={n.id} n={n} t={t}
+          onView={() => setViewing(n.id)}
+          onComment={() => openComment(n.id)} />
       ))}
       {filtered.length === 0 && (
         <div className="empty"><div className="empty-icon">📰</div><p>{t("news.empty")}</p></div>
+      )}
+
+      {viewingItem && (
+        <NewsDetailModal
+          n={viewingItem}
+          t={t}
+          canPin={isEmployee && (canPinAny || auth?.username === viewingItem.author)}
+          onClose={() => setViewing(null)}
+          onComment={() => openComment(viewingItem.id)}
+          onPin={(pin) => handlePin(viewingItem.id, pin)}
+        />
       )}
 
       {showCompose && (
@@ -132,11 +156,13 @@ export function News() {
               <textarea className="form-control" rows="8" value={form.body}
                         onChange={e => setForm({ ...form, body: e.target.value })} />
             </div>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-2)" }}>
-              <input type="checkbox" checked={form.pinned}
-                     onChange={e => setForm({ ...form, pinned: e.target.checked })} />
-              {t("ui.pin_this_post")}
-            </label>
+            {canPinAny && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-2)" }}>
+                <input type="checkbox" checked={form.pinned}
+                       onChange={e => setForm({ ...form, pinned: e.target.checked })} />
+                {t("ui.pin_this_post")}
+              </label>
+            )}
           </form>
         </Modal>
       )}
@@ -145,7 +171,7 @@ export function News() {
         <Modal title={t("ui.add_comment")} onClose={() => setCommenting(null)}
           actions={<>
             <button className="btn btn-secondary" onClick={() => setCommenting(null)}>{t("common.back")}</button>
-            <button className="btn btn-primary" onClick={() => handleComment(commenting)}>{t("ui.post_1")}</button>
+            <button className="btn btn-primary" disabled={!comment.trim()} onClick={() => handleComment(commenting)}>{t("ui.post_1")}</button>
           </>}>
           <textarea className="form-control" rows="4" placeholder={t("ui.write_your_comment")}
                     value={comment} onChange={e => setComment(e.target.value)} />
@@ -155,10 +181,10 @@ export function News() {
   );
 }
 
-function NewsCard({ n, open, onToggle, onComment }) {
-  const { t } = useI18n();
+function NewsCard({ n, t, onView, onComment }) {
   const body = n.body ?? "";
-  const isLong = body.length > 220 || body.split("\n").length > 3;
+  const isLong = body.length > FEED_PREVIEW_CHARS;
+  const preview = isLong ? body.slice(0, FEED_PREVIEW_CHARS) + "…" : body;
   const authorLabel = n.authorFullName ? `${n.authorFullName} (@${n.author})` : n.author;
   const publishedLabel = n.publishedAt?.slice(0, 16).replace("T", " ");
 
@@ -169,54 +195,83 @@ function NewsCard({ n, open, onToggle, onComment }) {
         {n.pinned && <span className="badge badge-yellow">📌 {t("ui.pinned_1")}</span>}
       </div>
 
-      <p style={{
-        color: "var(--text-2)",
-        fontSize: 13,
-        marginTop: 8,
-        lineHeight: 1.7,
-        whiteSpace: "pre-wrap",
-        display: open || !isLong ? "block" : "-webkit-box",
-        WebkitLineClamp: open || !isLong ? "unset" : 3,
-        WebkitBoxOrient: "vertical",
-        overflow: open || !isLong ? "visible" : "hidden",
-      }}>{body}</p>
+      <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 8, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+        {preview}
+      </p>
 
-      {isLong && (
-        <button className="btn btn-link" onClick={onToggle} style={{ padding: 0, fontSize: 13 }}>
-          {open ? t("ui.collapse") : t("ui.read_more")}
-        </button>
-      )}
-
-      <div className="flex-between mt-2" style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+      <div className="flex-between mt-2" style={{ borderTop: "1px solid var(--border)", paddingTop: 10, gap: 8, flexWrap: "wrap" }}>
         <span className="text-muted text-sm">
           {t("ui.by")} {authorLabel}
           {publishedLabel && <> · {publishedLabel}</>}
           {" · "}
           {n.comments?.length ?? 0} {t("ui.comments")}
         </span>
-        <button className="btn btn-secondary btn-sm" onClick={onComment}>💬 {t("ui.comment")}</button>
-      </div>
-
-      {open && n.comments?.length > 0 && (
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-          {n.comments.map((c, i) => {
-            const who = c.authorFullName ? `${c.authorFullName} (@${c.author})` : c.author;
-            return (
-              <div key={i} style={{ background: "var(--bg-3)", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>
-                <div className="flex-between" style={{ marginBottom: 2 }}>
-                  <span className="fw-600">{who}</span>
-                  {c.postedAt && (
-                    <span className="text-muted" style={{ fontSize: 11 }}>
-                      {c.postedAt.slice(0, 16).replace("T", " ")}
-                    </span>
-                  )}
-                </div>
-                <span className="text-muted" style={{ whiteSpace: "pre-wrap" }}>{c.text}</span>
-              </div>
-            );
-          })}
+        <div style={{ display: "flex", gap: 6 }}>
+          <button className="btn btn-link" onClick={onView} style={{ padding: "4px 8px", fontSize: 13 }}>
+            {t("ui.read_more")}
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={onComment}>💬 {t("ui.comment")}</button>
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+function NewsDetailModal({ n, t, canPin, onClose, onComment, onPin }) {
+  const body = n.body ?? "";
+  const authorLabel = n.authorFullName ? `${n.authorFullName} (@${n.author})` : n.author;
+  const publishedLabel = n.publishedAt?.slice(0, 16).replace("T", " ");
+
+  return (
+    <Modal title={n.title} onClose={onClose}
+      actions={<>
+        {canPin && (
+          n.pinned
+            ? <button className="btn btn-secondary btn-sm" onClick={() => onPin(false)}>📌 {t("ui.unpin")}</button>
+            : <button className="btn btn-secondary btn-sm" onClick={() => onPin(true)}>📌 {t("ui.pinned_1")}</button>
+        )}
+        <button className="btn btn-secondary btn-sm" onClick={onComment}>💬 {t("ui.comment")}</button>
+        <button className="btn btn-secondary" onClick={onClose}>{t("common.back")}</button>
+      </>}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ color: "var(--text-2)", fontSize: 13 }}>
+          {t("ui.by")} {authorLabel}
+          {publishedLabel && <> · {publishedLabel}</>}
+          {n.pinned && <> · 📌 {t("ui.pinned_1")}</>}
+        </div>
+
+        <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--text-2)", fontSize: 14 }}>
+          {body}
+        </p>
+
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+          <div className="fw-600" style={{ marginBottom: 8, fontSize: 13 }}>
+            {n.comments?.length ?? 0} {t("ui.comments")}
+          </div>
+          {n.comments?.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {n.comments.map((c, i) => {
+                const who = c.authorFullName ? `${c.authorFullName} (@${c.author})` : c.author;
+                return (
+                  <div key={i} style={{ background: "var(--bg-3)", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>
+                    <div className="flex-between" style={{ marginBottom: 2 }}>
+                      <span className="fw-600">{who}</span>
+                      {c.postedAt && (
+                        <span className="text-muted" style={{ fontSize: 11 }}>
+                          {c.postedAt.slice(0, 16).replace("T", " ")}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ whiteSpace: "pre-wrap", color: "var(--text-2)" }}>{c.text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-muted text-sm">{t("ui.no_comments")}</p>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }
