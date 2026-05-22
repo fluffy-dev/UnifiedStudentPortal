@@ -159,7 +159,7 @@ export function Login() {
           }}
         >
           <span>{showAccounts ? "▲" : "▼"}</span>
-          {showAccounts ? "Hide demo accounts" : "Show demo accounts (username = password)"}
+          {showAccounts ? t("ui.hide_demo_accounts") : t("ui.show_demo_accounts")}
         </button>
 
         {/* Mobile demo accounts */}
@@ -174,8 +174,8 @@ export function Login() {
       <div style={{ width: "100%", maxWidth: 420, paddingTop: 40, display: "none" }} className="demo-panel-desktop">
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", background: "var(--bg-3)" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Demo Accounts</div>
-            <div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 2 }}>username = password · click to fill</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{t("ui.demo_accounts")}</div>
+            <div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 2 }}>{t("ui.demo_password_hint")}</div>
           </div>
           <DemoAccountsTable onSelect={quickLogin} />
         </div>
@@ -239,7 +239,7 @@ function DemoAccountsTable({ onSelect }) {
                     </span>
                   </div>
                 </div>
-                <span style={{ fontSize: 11, color: "var(--text-3)", flexShrink: 0 }}>click to fill →</span>
+                <span style={{ fontSize: 11, color: "var(--text-3)", flexShrink: 0 }}>{t("ui.click_to_fill")}</span>
               </button>
             );
           })}
