@@ -20,7 +20,11 @@ export function Orders() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ description: "", deviceType: "LAPTOP" });
 
-  const load = () => api.listOrders().then(setOrders).catch(() => setOrders([])).finally(() => setLoading(false));
+  const load = () => api.listOrders().then(all => {
+    // TechSupport sees all orders; everyone else sees only their own
+    const visible = isTech ? all : all.filter(o => o.requester === auth?.username);
+    setOrders(visible);
+  }).catch(() => setOrders([])).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
   async function handleCreate(e) {
@@ -31,15 +35,15 @@ export function Orders() {
       setShowModal(false);
       setForm({ description: "", deviceType: "LAPTOP" });
       load();
-    } catch (err) { toast(t(err?.message || "Failed"), "error"); }
+    } catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
   }
   async function handleAccept(id) {
     try { await api.acceptOrder(id); toast(t("ui.order_accepted")); load(); }
-    catch (err) { toast(t(err?.message || "Failed"), "error"); }
+    catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
   }
   async function handleComplete(id) {
     try { await api.completeOrder(id); toast(t("ui.order_completed")); load(); }
-    catch (err) { toast(t(err?.message || "Failed"), "error"); }
+    catch (err) { toast(t(err?.message || "ui.error_generic"), "error"); }
   }
 
   const filtered = useMemo(() => {
@@ -65,7 +69,9 @@ export function Orders() {
           <h1>{t("ui.it_orders")}</h1>
           <p>{isTech ? t("ui.0_orders_in_queue", orders.length) : t("ui.0_orders_in_queue", orders.length)}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>＋ {t("ui.new_order")}</button>
+        {!isTech && (
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>＋ {t("ui.new_order")}</button>
+        )}
       </div>
 
       <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
@@ -149,7 +155,7 @@ export function Orders() {
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label>{t("ui.description")}</label>
-              <textarea className="form-control" rows="3" value={form.description}
+              <textarea className="form-control" rows="3" required value={form.description}
                         onChange={e => setForm({ ...form, description: e.target.value })} />
             </div>
           </form>

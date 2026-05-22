@@ -23,15 +23,21 @@ export function Requests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [expanded, setExpanded] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [form, setForm] = useState({ title: "", body: "", type: HELP_TYPES[0], urgency: "MEDIUM" });
 
   const canProcess = ["Manager", "Dean"].includes(auth?.role);
 
-  const load = () => api.listRequests().then(setRequests).finally(() => setLoading(false));
+  const load = () => api.listRequests().then(all => {
+    // Non-managers only see their own requests
+    const visible = canProcess ? all : all.filter(r => r.requester === auth?.username);
+    setRequests(visible);
+  }).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
+
+  const viewingItem = useMemo(() => requests.find(r => r.id === viewing) ?? null, [requests, viewing]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,17 +48,17 @@ export function Requests() {
       setForm({ title: "", body: "", type: HELP_TYPES[0], urgency: "MEDIUM" });
       load();
     } catch (err) {
-      toast(t(err?.message || "Failed"), "error");
+      toast(t(err?.message || "ui.error_generic"), "error");
     }
   }
 
   async function decide(id, status) {
     try {
       await api.processRequest(id, status);
-      toast(t(status));
+      toast(status === "APPROVED" ? t("ui.request_approved") : t("ui.request_rejected"));
       load();
     } catch (err) {
-      toast(t(err?.message || "Failed"), "error");
+      toast(t(err?.message || "ui.error_generic"), "error");
     }
   }
 
@@ -99,67 +105,60 @@ export function Requests() {
           onChange={e => setStatusFilter(e.target.value)}
         >
           <option value="ALL">{t("ui.status")}: {t("ui.all")}</option>
-          {["PENDING", "APPROVED", "REJECTED", "ACCEPTED", "NOT_APPROVED"].map(s =>
+          {["PENDING", "APPROVED", "REJECTED"].map(s =>
             <option key={s} value={s}>{t(s)}</option>
           )}
         </select>
       </div>
 
       <div className="card-grid">
-        {filtered.map(r => {
-          const open = expanded === r.id;
-          return (
-            <div key={r.id} className="card card-sm">
-              <div className="flex-between">
-                <span className="fw-600">{r.title}</span>
-                <Badge tone={r.status} label={t(r.status)} />
-              </div>
-              <div className="text-muted text-sm mt-1">
-                {t(r.type)} · <Badge tone={r.urgency} label={t(r.urgency)} />
-              </div>
-              <div className="text-muted text-sm mt-1">
-                {t("ui.by")} <strong>{r.requesterFullName || r.requester}</strong>
-                {r.requesterFullName && <span> (@{r.requester})</span>}
-                {" · "}
-                {r.createdAt?.slice(0, 16).replace("T", " ")}
-              </div>
+        {filtered.map(r => (
+          <div key={r.id} className="card card-sm">
+            <div className="flex-between">
+              <span className="fw-600">{r.title}</span>
+              <Badge tone={r.status} label={t(r.status)} />
+            </div>
+            <div className="text-muted text-sm mt-1">
+              {t(r.type)} · <Badge tone={r.urgency} label={t(r.urgency)} />
+            </div>
+            <div className="text-muted text-sm mt-1">
+              {t("ui.by")} <strong>{r.requesterFullName || r.requester}</strong>
+              {r.requesterFullName && <span> (@{r.requester})</span>}
+              {" · "}
+              {r.createdAt?.slice(0, 16).replace("T", " ")}
+            </div>
 
-              {open && r.body && (
-                <div style={{
-                  marginTop: 8,
-                  padding: "10px 12px",
-                  background: "var(--bg-3)",
-                  borderRadius: 8,
-                  fontSize: 13,
-                  whiteSpace: "pre-wrap",
-                  color: "var(--text-2)"
-                }}>
-                  {r.body}
+            <div className="flex-between mt-2" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setViewing(r.id)}>
+                🔍 {t("ui.read_more")}
+              </button>
+              {canProcess && r.status === "PENDING" && (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="btn btn-primary btn-sm" onClick={() => decide(r.id, "APPROVED")}>
+                    ✓ {t("ui.approve")}
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => decide(r.id, "REJECTED")}>
+                    ✗ {t("ui.reject")}
+                  </button>
                 </div>
               )}
-
-              <div className="flex-between mt-2" style={{ gap: 8, flexWrap: "wrap" }}>
-                <button className="btn btn-secondary btn-sm" onClick={() => setExpanded(open ? null : r.id)}>
-                  {open ? t("ui.collapse") : t("ui.read_more")}
-                </button>
-                {canProcess && r.status === "PENDING" && (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="btn btn-primary btn-sm" onClick={() => decide(r.id, "APPROVED")}>
-                      ✓ {t("ui.approve")}
-                    </button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => decide(r.id, "REJECTED")}>
-                      ✗ {t("ui.reject")}
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
         {filtered.length === 0 && (
           <div className="empty"><div className="empty-icon">🙋</div><p>{t("ui.no_requests")}</p></div>
         )}
       </div>
+
+      {viewingItem && (
+        <RequestDetailModal
+          r={viewingItem}
+          t={t}
+          canProcess={canProcess}
+          onClose={() => setViewing(null)}
+          onDecide={(status) => { decide(viewingItem.id, status); setViewing(null); }}
+        />
+      )}
 
       {showModal && (
         <Modal title={t("ui.submit_help_request")} onClose={() => setShowModal(false)}
@@ -196,5 +195,59 @@ export function Requests() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function RequestDetailModal({ r, t, canProcess, onClose, onDecide }) {
+  const authorLabel = r.requesterFullName
+    ? `${r.requesterFullName} (@${r.requester})`
+    : r.requester;
+  const createdLabel = r.createdAt?.slice(0, 16).replace("T", " ");
+
+  return (
+    <Modal title={r.title} onClose={onClose}
+      actions={<>
+        {canProcess && r.status === "PENDING" && (
+          <>
+            <button className="btn btn-primary btn-sm" onClick={() => onDecide("APPROVED")}>
+              ✓ {t("ui.approve")}
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => onDecide("REJECTED")}>
+              ✗ {t("ui.reject")}
+            </button>
+          </>
+        )}
+        <button className="btn btn-secondary" onClick={onClose}>{t("common.back")}</button>
+      </>}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <Badge tone={r.status} label={t(r.status)} />
+          <Badge tone={r.urgency} label={t(r.urgency)} />
+          <span className="text-muted text-sm">{t(r.type)}</span>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div className="text-muted text-sm">
+            <strong>{t("ui.by")}</strong> {authorLabel}
+          </div>
+          {createdLabel && (
+            <div className="text-muted text-sm">
+              <strong>{t("ui.created")}:</strong> {createdLabel}
+            </div>
+          )}
+        </div>
+
+        {r.body ? (
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+            <div className="fw-600" style={{ marginBottom: 6, fontSize: 13 }}>{t("ui.description")}</div>
+            <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--text-2)", fontSize: 14 }}>
+              {r.body}
+            </p>
+          </div>
+        ) : (
+          <p className="text-muted text-sm">{t("ui.no_description")}</p>
+        )}
+      </div>
+    </Modal>
   );
 }

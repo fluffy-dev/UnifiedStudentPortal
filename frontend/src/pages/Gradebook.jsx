@@ -26,7 +26,6 @@ export function Gradebook() {
   }, []);
 
   const myCourses = useMemo(() => {
-    if (auth?.role === "Dean") return courses;
     return courses.filter(c => Array.isArray(c.teachers) && c.teachers.includes(auth?.username));
   }, [courses, auth]);
 
@@ -55,17 +54,21 @@ export function Gradebook() {
     try {
       const data = await api.viewGrades(id);
       setGrades(Array.isArray(data) ? data : []);
-    } catch (_) {}
+    } catch (e) { toast(t("ui.error_loading"), "error"); }
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!form.studentUsername) {
+      toast(t("ui.select_student_first"), "error");
+      return;
+    }
     try {
       await api.recordMarks(selected, form);
       toast(t("ui.marks_recorded"));
       setShowModal(false);
       loadGrades(selected);
-    } catch (e) { toast(t(e?.message || "Failed"), "error"); }
+    } catch (e) { toast(t(e?.message || "ui.error_generic"), "error"); }
   }
 
   if (loading) return <div className="page"><div className="spinner" /></div>;
@@ -106,7 +109,10 @@ export function Gradebook() {
             <>
               <div className="flex-between mb-3">
                 <div className="section-title" style={{ marginBottom:0 }}>{t("ui.student_grades")}</div>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>＋ {t("ui.record_marks")}</button>
+                <button className="btn btn-primary btn-sm" onClick={() => {
+                  setForm({ studentUsername:"", firstHalf:0, secondHalf:0, exam:0 });
+                  setShowModal(true);
+                }}>＋ {t("ui.record_marks")}</button>
               </div>
               <div className="table-wrap">
                 <table>
@@ -114,6 +120,8 @@ export function Gradebook() {
                   <tbody>
                     {grades.map((g, i) => {
                       const user = directory.find(u => u.username === g.student);
+                      const isFx = !g.passing && (g.fx === true || g.letter === "FX");
+                      const needsRetake = g.needsRetake === true;
                       return (
                         <tr key={i}>
                           <td className="fw-600">
@@ -129,7 +137,14 @@ export function Gradebook() {
                           </td>
                           <td>{g.total}</td>
                           <td><Badge label={g.letter} /></td>
-                          <td><Badge tone={g.passing ? "PASSING" : "FAILING"} label={t(g.passing ? "PASSING" : "FAILING")} /></td>
+                          <td>
+                            {isFx
+                              ? <Badge tone="FAILING" label={t("ui.retake_exam")} />
+                              : needsRetake
+                                ? <Badge tone="FAILING" label={t("ui.retake_course")} />
+                                : <Badge tone={g.passing ? "PASSING" : "FAILING"} label={t(g.passing ? "PASSING" : "FAILING")} />
+                            }
+                          </td>
                         </tr>
                       );
                     })}
