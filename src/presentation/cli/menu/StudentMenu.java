@@ -35,6 +35,7 @@ public final class StudentMenu extends Menu {
     private final JoinOrganization joinOrg;
     private final BecomeResearcherAction becomeResearcher;
     private final ResearcherMenuExtension researcherMenu;
+    private final CommonMenuActions common;
 
     public StudentMenu(Console console, Student student,
                        CourseRepository courses, OrganizationRepository orgs,
@@ -45,7 +46,8 @@ public final class StudentMenu extends Menu {
                        RateTeacher rateTeacher,
                        CreateOrganization createOrg, JoinOrganization joinOrg,
                        BecomeResearcherAction becomeResearcher,
-                       ResearcherMenuExtension researcherMenu) {
+                       ResearcherMenuExtension researcherMenu,
+                       CommonMenuActions common) {
         super(console);
         this.student = student;
         this.courses = courses;
@@ -61,39 +63,54 @@ public final class StudentMenu extends Menu {
         this.joinOrg = joinOrg;
         this.becomeResearcher = becomeResearcher;
         this.researcherMenu = researcherMenu;
+        this.common = common;
     }
 
     @Override protected String title() { return "=== STUDENT MENU (" + student.username() + ") ==="; }
 
     @Override protected List<MenuItem> items() {
         List<MenuItem> items = new ArrayList<>();
-        if (!student.isResearcher()) {
+        if (!student.isResearcher())
             items.add(new MenuItem("Become a researcher", () -> becomeResearcher.run(student)));
-        }
-        items.add(new MenuItem("View enrolled courses", this::viewEnrolled));
-        items.add(new MenuItem("View available courses", this::viewAvailable));
-        items.add(new MenuItem("Enroll in a course", this::enrollInteractive));
-        items.add(new MenuItem("Drop a course", this::dropInteractive));
-        items.add(new MenuItem("View transcript", this::renderTranscript));
-        items.add(new MenuItem("Borrow a book", this::borrowInteractive));
-        items.add(new MenuItem("Return a book", this::returnInteractive));
-        items.add(new MenuItem("View notifications", this::viewNotifications));
-        items.add(new MenuItem("Rate a teacher", this::rateInteractive));
-        items.add(new MenuItem("View organizations", this::listOrgs));
-        items.add(new MenuItem("Join organization", this::joinOrgInteractive));
-        items.add(new MenuItem("Create organization", this::createOrgInteractive));
+        items.add(new MenuItem("View enrolled courses",   this::viewEnrolled));
+        items.add(new MenuItem("View available courses",  this::viewAvailable));
+        items.add(new MenuItem("Enroll in a course",      this::enrollInteractive));
+        items.add(new MenuItem("Drop a course",           this::dropInteractive));
+        items.add(new MenuItem("View transcript",         this::renderTranscript));
+        items.add(new MenuItem("View schedule",           this::viewSchedule));
+        items.add(new MenuItem("Borrow a book",           this::borrowInteractive));
+        items.add(new MenuItem("Return a book",           this::returnInteractive));
+        items.add(new MenuItem("View inbox",              common::viewInbox));
+        items.add(new MenuItem("Send message",            common::sendMessageInteractive));
+        items.add(new MenuItem("View news",               common::viewNews));
+        items.add(new MenuItem("Submit help request",     common::submitRequestInteractive));
+        items.add(new MenuItem("Submit IT order",         common::createOrderInteractive));
+        items.add(new MenuItem("View notifications",      this::viewNotifications));
+        items.add(new MenuItem("Rate a teacher",          this::rateInteractive));
+        items.add(new MenuItem("View organizations",      this::listOrgs));
+        items.add(new MenuItem("Join organization",       this::joinOrgInteractive));
+        items.add(new MenuItem("Create organization",     this::createOrgInteractive));
         items.addAll(researcherMenu.itemsFor(student));
         return items;
     }
 
     private void viewEnrolled() {
-        if (student.enrolledCourses().isEmpty()) { console.println("No enrollments."); return; }
-        student.enrolledCourses().forEach(id -> courses.findById(id).ifPresent(c -> console.println("  " + c)));
+        var enrolled = courses.findAll().stream()
+                .filter(c -> c.hasStudent(student.username())).toList();
+        if (enrolled.isEmpty()) { console.println("No enrollments."); return; }
+        enrolled.forEach(c -> {
+            String grade = c.gradeOf(student.username())
+                    .map(g -> g.letter() + " (" + g.total() + "/100)").orElse("in progress");
+            console.println("  " + c.name() + " [" + c.id() + "] — " + grade);
+        });
     }
 
     private void viewAvailable() {
-        if (courses.findAll().isEmpty()) { console.println("No courses."); return; }
-        courses.findAll().forEach(c -> console.println("  " + c));
+        var all = courses.findAll();
+        if (all.isEmpty()) { console.println("No courses available."); return; }
+        all.forEach(c -> console.println("  [" + c.id() + "] " + c.name()
+                + " | " + c.credits() + " cr | " + c.remainingSeats() + "/" + c.capacity().max() + " seats"
+                + (c.isFull() ? " FULL" : "")));
     }
 
     private void enrollInteractive() {
@@ -112,8 +129,27 @@ public final class StudentMenu extends Menu {
         ViewTranscript.Transcript t = viewTranscript.execute(student);
         console.println("\n=== TRANSCRIPT — " + t.fullName() + " ===");
         console.println("Degree: " + t.degreeType() + " | Year: " + t.year() + " | Fails: " + t.failCount());
-        t.lines().forEach(l -> console.println("  " + l.courseName() + ": " + l.letter() + " (" + l.total() + ")"));
-        console.println(String.format("GPA: %.2f", t.gpa()));
+        if (t.lines().isEmpty()) { console.println("  No courses yet."); }
+        else t.lines().forEach(l -> {
+            String score = l.firstHalf() >= 0
+                    ? l.firstHalf() + "+" + l.secondHalf() + "+" + l.exam() + "=" + l.total()
+                    : "ungraded";
+            console.println("  " + l.courseName() + ": " + l.letter() + " (" + score + ")");
+        });
+        String gpaStr = t.gpa() != null ? String.format("%.2f / 4.0", t.gpa()) : "N/A (no grades yet)";
+        console.println("GPA: " + gpaStr);
+    }
+
+    private void viewSchedule() {
+        var myCourses = courses.findAll().stream()
+                .filter(c -> c.hasStudent(student.username()) && !c.lessons().isEmpty()).toList();
+        if (myCourses.isEmpty()) { console.println("No lessons scheduled."); return; }
+        console.println("\n--- LESSON SCHEDULE ---");
+        myCourses.forEach(c -> {
+            console.println("  " + c.name() + ":");
+            c.lessons().forEach(l -> console.println("    " + l.slot().day() + " " + l.slot().time()
+                    + " | " + l.type() + " | Room: " + l.room()));
+        });
     }
 
     private void borrowInteractive() {
@@ -129,7 +165,7 @@ public final class StudentMenu extends Menu {
     private void viewNotifications() {
         var list = notifications.findFor(student.username());
         if (list.isEmpty()) { console.println("No notifications."); return; }
-        list.forEach(n -> console.println(n.toString()));
+        list.forEach(n -> console.println("  " + n.at().toLocalDate() + " — " + n.text()));
     }
 
     private void rateInteractive() {
@@ -140,8 +176,9 @@ public final class StudentMenu extends Menu {
     }
 
     private void listOrgs() {
-        if (orgs.findAll().isEmpty()) { console.println("No organizations."); return; }
-        orgs.findAll().forEach(o -> console.println("  " + o));
+        var all = orgs.findAll();
+        if (all.isEmpty()) { console.println("No organizations."); return; }
+        all.forEach(o -> console.println("  " + o));
     }
 
     private void joinOrgInteractive() {

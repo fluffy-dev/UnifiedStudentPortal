@@ -21,10 +21,12 @@ public final class TeacherMenu extends Menu {
     private final ComplainAboutStudent complainAboutStudent;
     private final BecomeResearcherAction becomeResearcher;
     private final ResearcherMenuExtension researcherMenu;
+    private final CommonMenuActions common;
 
     public TeacherMenu(Console console, Teacher teacher, CourseRepository courses, RecordMarks recordMarks,
                        ComplainAboutStudent complainAboutStudent,
-                       BecomeResearcherAction becomeResearcher, ResearcherMenuExtension researcherMenu) {
+                       BecomeResearcherAction becomeResearcher, ResearcherMenuExtension researcherMenu,
+                       CommonMenuActions common) {
         super(console);
         this.teacher = teacher;
         this.courses = courses;
@@ -32,6 +34,7 @@ public final class TeacherMenu extends Menu {
         this.complainAboutStudent = complainAboutStudent;
         this.becomeResearcher = becomeResearcher;
         this.researcherMenu = researcherMenu;
+        this.common = common;
     }
 
     @Override protected String title() { return "=== TEACHER MENU (" + teacher.username() + ") ==="; }
@@ -41,17 +44,34 @@ public final class TeacherMenu extends Menu {
         if (!teacher.isResearcher()) {
             items.add(new MenuItem("Become a researcher", () -> becomeResearcher.run(teacher)));
         }
-        items.add(new MenuItem("View my courses", this::viewTaught));
-        items.add(new MenuItem("Record student marks", this::recordMarksInteractive));
-        items.add(new MenuItem("View my ratings", this::viewRatings));
+        items.add(new MenuItem("View my courses",              this::viewTaught));
+        items.add(new MenuItem("Record student marks",         this::recordMarksInteractive));
+        items.add(new MenuItem("View student grades",          this::viewGrades));
+        items.add(new MenuItem("View my ratings",              this::viewRatings));
         items.add(new MenuItem("Send complaint about student", this::complainInteractive));
+        items.add(new MenuItem("View inbox",                   common::viewInbox));
+        items.add(new MenuItem("Send message",                 common::sendMessageInteractive));
+        items.add(new MenuItem("View news",                    common::viewNews));
+        items.add(new MenuItem("Publish news",                 common::publishNewsInteractive));
         items.addAll(researcherMenu.itemsFor(teacher));
         return items;
     }
 
     private void viewTaught() {
         if (teacher.taughtCourses().isEmpty()) { console.println("No assignments."); return; }
-        teacher.taughtCourses().forEach(id -> courses.findById(id).ifPresent(c -> console.println("  " + c)));
+        teacher.taughtCourses().forEach(id -> courses.findById(id).ifPresent(c ->
+            console.println("  [" + c.id() + "] " + c.name() + " — " + c.students().size() + " students")));
+    }
+
+    private void viewGrades() {
+        viewTaught();
+        String cid = console.readLine("Course ID:");
+        courses.findById(new domain.course.CourseId(cid)).ifPresentOrElse(c -> {
+            if (!c.teachers().contains(teacher.username())) { console.println("Not your course."); return; }
+            if (c.allGrades().isEmpty()) { console.println("No grades yet."); return; }
+            c.allGrades().forEach((u, g) ->
+                console.println("  " + u + ": " + g.letter() + " (" + g.total() + "/100) att=" + g.attestationTotal()));
+        }, () -> console.println("Course not found."));
     }
 
     private void recordMarksInteractive() {

@@ -36,13 +36,14 @@ public final class ManagerMenu extends Menu {
     private final PublishNews publishNews;
     private final ProcessRequest processRequest;
     private final GenerateAcademicReport report;
+    private final CommonMenuActions common;
 
     public ManagerMenu(Console console, Manager manager,
                        CourseRepository courses, RequestRepository requests,
                        CreateCourse createCourse, AssignTeacher assignTeacher, AddLesson addLesson,
                        SetCoursePrerequisite setPrereq, SetCourseCapacity setCapacity,
                        PublishNews publishNews, ProcessRequest processRequest,
-                       GenerateAcademicReport report) {
+                       GenerateAcademicReport report, CommonMenuActions common) {
         super(console);
         this.manager = manager;
         this.courses = courses;
@@ -55,23 +56,26 @@ public final class ManagerMenu extends Menu {
         this.publishNews = publishNews;
         this.processRequest = processRequest;
         this.report = report;
+        this.common = common;
     }
 
     @Override protected String title() { return "=== MANAGER MENU (" + manager.username() + ") ==="; }
 
     @Override protected List<MenuItem> items() {
-        return List.of(
-                new MenuItem("View all courses", this::viewCourses),
-                new MenuItem("Create course", this::createInteractive),
-                new MenuItem("Assign teacher to course", this::assignInteractive),
-                new MenuItem("Add lesson to course", this::addLessonInteractive),
-                new MenuItem("Set course prerequisite", this::setPrereqInteractive),
-                new MenuItem("Set course capacity", this::setCapacityInteractive),
-                new MenuItem("View pending requests", this::viewPendingRequests),
-                new MenuItem("Process a request", this::processRequestInteractive),
-                new MenuItem("Publish news", this::publishNewsInteractive),
-                new MenuItem("Generate academic report", this::renderReport)
-        );
+        List<MenuItem> items = new java.util.ArrayList<>();
+        items.add(new MenuItem("View all courses",          this::viewCourses));
+        items.add(new MenuItem("Create course",             this::createInteractive));
+        items.add(new MenuItem("Assign teacher to course",  this::assignInteractive));
+        items.add(new MenuItem("Add lesson to course",      this::addLessonInteractive));
+        items.add(new MenuItem("Set course prerequisite",   this::setPrereqInteractive));
+        items.add(new MenuItem("Set course capacity",       this::setCapacityInteractive));
+        items.add(new MenuItem("View pending requests",     this::viewPendingRequests));
+        items.add(new MenuItem("Process a request",         this::processRequestInteractive));
+        items.add(new MenuItem("Publish news",              this::publishNewsInteractive));
+        items.add(new MenuItem("Generate academic report",  this::renderReport));
+        items.add(new MenuItem("View inbox",                common::viewInbox));
+        items.add(new MenuItem("Send message",              common::sendMessageInteractive));
+        return items;
     }
 
     private void viewCourses() {
