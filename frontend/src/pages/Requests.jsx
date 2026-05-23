@@ -113,7 +113,7 @@ export function Requests() {
 
       <div className="card-grid">
         {filtered.map(r => (
-          <div key={r.id} className="card card-sm">
+          <div key={r.id} className="card card-sm" style={{ cursor: "pointer" }} onClick={() => setViewing(r.id)}>
             <div className="flex-between">
               <span className="fw-600">{r.title}</span>
               <Badge tone={r.status} label={t(r.status)} />
@@ -127,17 +127,22 @@ export function Requests() {
               {" · "}
               {r.createdAt?.slice(0, 16).replace("T", " ")}
             </div>
+            {r.body && (
+              <p className="text-muted text-sm mt-1" style={{ whiteSpace: "pre-wrap", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                {r.body}
+              </p>
+            )}
 
             <div className="flex-between mt-2" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => setViewing(r.id)}>
+              <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); setViewing(r.id); }}>
                 🔍 {t("ui.read_more")}
               </button>
               {canProcess && r.status === "PENDING" && (
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => decide(r.id, "APPROVED")}>
+                  <button className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); decide(r.id, "APPROVED"); }}>
                     ✓ {t("ui.approve")}
                   </button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => decide(r.id, "REJECTED")}>
+                  <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); decide(r.id, "REJECTED"); }}>
                     ✗ {t("ui.reject")}
                   </button>
                 </div>

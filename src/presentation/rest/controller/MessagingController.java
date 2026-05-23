@@ -100,6 +100,22 @@ public final class MessagingController {
         return resultToResponse(result);
     }
 
+    /** PUT /api/messages/{id}/read — mark an inbox message as read */
+    public HttpResponse markRead(HttpRequest request) {
+        User user = RequestContext.current();
+        int id;
+        try { id = Integer.parseInt(request.pathSegment(2).orElse("")); }
+        catch (NumberFormatException e) { return HttpResponse.badRequest("Invalid message id."); }
+        return ctx.messageRepository.findById(id)
+                .map(m -> {
+                    if (!m.recipient().equals(user.username())) return HttpResponse.forbidden();
+                    m.markRead();
+                    ctx.messageRepository.save(m);
+                    return HttpResponse.ok(JsonObjectBuilder.create().put("status", m.status().name()).build());
+                })
+                .orElse(HttpResponse.notFound("Message not found."));
+    }
+
     /** GET /api/messages/sent */
     public HttpResponse sentMessages(HttpRequest request) {
         User user = RequestContext.current();

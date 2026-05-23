@@ -28,10 +28,11 @@ export const removeBook = (title)  => del(`/books/${encodeURIComponent(title)}`)
 export const borrowBook = (title)  => post(`/books/${encodeURIComponent(title)}/borrow`);
 export const returnBook = (title)  => post(`/books/${encodeURIComponent(title)}/return`);
 
-export const inbox         = ()     => get("/messages/inbox");
-export const sentMessages  = ()     => get("/messages/sent");
-export const sendMessage   = (data) => post("/messages", data);
-export const listNews      = ()     => get("/news");
+export const inbox           = ()     => get("/messages/inbox");
+export const sentMessages    = ()     => get("/messages/sent");
+export const sendMessage     = (data) => post("/messages", data);
+export const markMessageRead = (id)   => put(`/messages/${id}/read`);
+export const listNews        = ()     => get("/news");
 export const publishNews   = (data) => post("/news", data);
 export const pinNews       = (id, pinned) => put(`/news/${id}/pin`, { pinned });
 export const commentOnNews = (id, comment) => post(`/news/${id}/comment`, { comment });

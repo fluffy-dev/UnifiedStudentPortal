@@ -61,6 +61,19 @@ export function Messages() {
     return [...inbox, ...sent].find(m => m.id === viewing) ?? null;
   }, [viewing, inbox, sent]);
 
+  async function openMessage(id) {
+    setViewing(id);
+    // mark as read if it's an unread inbox message
+    const msg = inbox.find(m => m.id === id);
+    if (msg && msg.status === "UNREAD") {
+      try {
+        await api.markMessageRead(id);
+        // update local state immediately — no full reload needed
+        setInbox(prev => prev.map(m => m.id === id ? { ...m, status: "READ" } : m));
+      } catch (_) {}
+    }
+  }
+
   if (loading) return <div className="page"><div className="spinner" /></div>;
 
   return (
@@ -69,7 +82,14 @@ export function Messages() {
       <div className="page-header flex-between">
         <div>
           <h1>{t("ui.messages_page")}</h1>
-          <p>{t("ui.0_in_inbox", inbox.length)}</p>
+          <p>
+            {t("ui.0_in_inbox", inbox.length)}
+            {inbox.filter(m => m.status === "UNREAD").length > 0 && (
+              <span style={{ marginLeft: 8, background: "var(--accent)", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
+                {inbox.filter(m => m.status === "UNREAD").length} {t("ui.unread")}
+              </span>
+            )}
+          </p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowCompose(true)}>
           ✉️ {t("ui.compose")}
@@ -113,31 +133,42 @@ export function Messages() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(m => (
-                <tr key={m.id} style={{ cursor: "pointer" }} onClick={() => setViewing(m.id)}>
-                  <td className="fw-600">{m.subject}</td>
-                  <td className="text-muted">
-                    {tab === "inbox" ? (
-                      m.senderFullName
-                        ? <><strong>{m.senderFullName}</strong> <span className="text-muted text-sm">@{m.sender}</span></>
-                        : m.sender
-                    ) : (
-                      m.recipient
-                    )}
-                  </td>
-                  <td><Badge tone={m.urgency} label={t(m.urgency)} /></td>
-                  <td><Badge tone={m.status} label={t(m.status)} /></td>
-                  <td className="text-muted text-sm">{m.sentAt?.slice(0, 16).replace("T", " ")}</td>
-                  <td>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={e => { e.stopPropagation(); setViewing(m.id); }}
-                    >
-                      {t("ui.read_more")}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map(m => {
+                const isUnread = tab === "inbox" && m.status === "UNREAD";
+                return (
+                  <tr key={m.id}
+                    style={{ cursor: "pointer", fontWeight: isUnread ? 700 : 400, background: isUnread ? "rgba(37,99,235,0.04)" : undefined }}
+                    onClick={() => openMessage(m.id)}
+                  >
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {isUnread && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, display: "inline-block" }} />}
+                        {m.subject}
+                      </div>
+                    </td>
+                    <td className="text-muted">
+                      {tab === "inbox" ? (
+                        m.senderFullName
+                          ? <><strong>{m.senderFullName}</strong> <span className="text-muted text-sm">@{m.sender}</span></>
+                          : m.sender
+                      ) : (
+                        m.recipient
+                      )}
+                    </td>
+                    <td><Badge tone={m.urgency} label={t(m.urgency)} /></td>
+                    <td><Badge tone={m.status} label={t(m.status)} /></td>
+                    <td className="text-muted text-sm">{m.sentAt?.slice(0, 16).replace("T", " ")}</td>
+                    <td>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={e => { e.stopPropagation(); openMessage(m.id); }}
+                      >
+                        {t("ui.read_more")}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan="6" style={{ textAlign: "center", color: "var(--text-2)" }}>

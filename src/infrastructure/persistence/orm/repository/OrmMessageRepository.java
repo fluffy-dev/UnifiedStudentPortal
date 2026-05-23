@@ -17,6 +17,9 @@ public final class OrmMessageRepository implements MessageRepository {
     }
 
     @Override public void save(Message m) { repo.save(m); }
+    @Override public java.util.Optional<Message> findById(int id) {
+        return repo.whereEq("id", String.valueOf(id)).first();
+    }
     @Override public List<Message> inboxOf(Username recipient) {
         return repo.whereEq("recipient", recipient.value())
                 .orderBy(Message::compareTo)

@@ -11,6 +11,9 @@ public final class InMemoryMessageRepository implements MessageRepository {
     private final List<Message> messages = new ArrayList<>();
 
     @Override public void save(Message m) { messages.add(m); }
+    @Override public java.util.Optional<Message> findById(int id) {
+        return messages.stream().filter(m -> m.id() == id).findFirst();
+    }
     @Override public List<Message> inboxOf(Username recipient) {
         return messages.stream()
                 .filter(m -> m.recipient().equals(recipient))
